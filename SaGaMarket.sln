@@ -7,11 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SaGaMarket.Core", "SaGaMark
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{EA68765D-CE33-4114-BB16-9FFEB1BBE973}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{2DA0AE6E-4003-423B-B080-23AC3574801D}"
-	ProjectSection(SolutionItems) = preProject
-		..\..\..\Downloads\Техническое_задание.md = ..\..\..\Downloads\Техническое_задание.md
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
