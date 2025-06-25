@@ -17,7 +17,11 @@ public class Product
     public List<Guid> ReviewIds { get; set; } = [];
 
     //Тут должны быть связи для EntityFramework
-
+    public User Seller { get; set; }
+    public List<Variant> Variants { get; set; } = new();
+    public List<Review> Reviews { get; set; } = new();
+    public List<Tag> Tags { get; set; } = new();
+    public List<Order> Orders { get; set; } = new();
 
 
     public Product(){}
@@ -25,10 +29,6 @@ public class Product
     {
         ProductId = productDto.ProductId;
         SellerId = productDto.SellerId;
-        Name = productDto.ProductName;
-        Description = productDto.ProductDescription;
-        Price = productDto.Price;
-        PriceHistory = productDto.PriceHistory;
         Category = productDto.ProductCategory;
         AverageRating = productDto.AverageRating;
         ReviewIds = productDto.ReviewIds;

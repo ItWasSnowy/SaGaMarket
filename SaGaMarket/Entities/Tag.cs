@@ -6,7 +6,8 @@ public class Tag
 {
     public string TagName { get; set; }
 
-
+    // Navigation properties
+    public List<Product> Products { get; set; } = new();
 
 
     public Tag() { }

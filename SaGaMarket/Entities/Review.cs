@@ -5,11 +5,16 @@ namespace SaGaMarket.Core.Entities;
 public class Review
 {
     public Guid ReviewId { get; set; }
+    public Guid ProductId { get; set; }
     public double UserRating { get; set; }
     public List<Guid> CommentIds { get; set; } = [];
+    public Guid AuthorId { get; set; } // Внешний ключ
 
 
-    //Тут должны быть связи для EntityFramework
+    // Navigation properties
+    public User Author { get; set; }
+    public Product Product { get; set; }
+    public List<Comment> Comments { get; set; } = new();
 
 
     public Review() { }

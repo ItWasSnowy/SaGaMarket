@@ -20,10 +20,6 @@ public class ProductDto
     {
         ProductId = product.ProductId;
         SellerId = product.SellerId;
-        ProductName = product.Name;
-        ProductDescription = product.Description;
-        Price = product.Price;
-        PriceHistory = product.PriceHistory;
         ProductCategory = product.Category;
         AverageRating = product.AverageRating;
         ReviewIds = product.ReviewIds;
