@@ -1,0 +1,6 @@
+@SaGaMarket.Server_HostAddress = http://localhost:5244
+
+GET {{SaGaMarket.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
