@@ -16,7 +16,7 @@ namespace SaGaMarket.Core.UseCases
         {
 
             // Получаем список комментариев от автора
-            var comments = await _commentRepository.GetByTourRoute(reviewId);
+            var comments = await _commentRepository.GetByReview(reviewId);
             if (comments == null || !comments.Any()) return null;
 
             var commentDtos = comments.Select(comment => new CommentDto(comment)).ToList();

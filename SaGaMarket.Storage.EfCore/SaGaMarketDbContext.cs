@@ -8,10 +8,6 @@ namespace SaGaMarket.Infrastructure.Data
 {
     public class SaGaMarketDbContext : DbContext
     {
-        public SaGaMarketDbContext(DbContextOptions<SaGaMarketDbContext> options)
-            : base(options)
-        {
-        }
 
         public DbSet<User> Users { get; set; }
         public DbSet<Product> Products { get; set; }
@@ -21,16 +17,18 @@ namespace SaGaMarket.Infrastructure.Data
         public DbSet<Tag> Tags { get; set; }
         public DbSet<Variant> Variants { get; set; }
 
+        public SaGaMarketDbContext(DbContextOptions<SaGaMarketDbContext> options) : base(options)
+        {
+            //Database.EnsureDeleted();
+            //Database.EnsureCreated();
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Apply all configurations from assembly
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-            // Configure relationships
-
-            // User relationships
             modelBuilder.Entity<User>()
                 .HasMany(u => u.Comments)
                 .WithOne()
@@ -49,7 +47,6 @@ namespace SaGaMarket.Infrastructure.Data
                 .HasForeignKey(o => o.CustomerId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Product relationships
             modelBuilder.Entity<Product>()
                 .HasOne(p => p.Seller)
                 .WithMany(u => u.ProductsForSale)
@@ -73,21 +70,24 @@ namespace SaGaMarket.Infrastructure.Data
                 .WithMany(t => t.Products)
                 .UsingEntity(j => j.ToTable("ProductTags"));
 
-            // Order relationships
             modelBuilder.Entity<Order>()
                 .HasMany(o => o.Products)
                 .WithMany(p => p.Orders)
                 .UsingEntity(j => j.ToTable("OrderProducts"));
 
-            // Review relationships
             modelBuilder.Entity<Review>()
                 .HasMany(r => r.Comments)
                 .WithOne()
                 .HasForeignKey(c => c.ReviewId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Configure value objects
-            modelBuilder.Entity<PriceGraph>().HasNoKey();
+            modelBuilder.Entity<PriceGraph>()
+        .HasKey(pg => pg.VariantId); // Указываем, что VariantId является первичным ключом
+            modelBuilder.Entity<Variant>()
+        .HasOne(v => v.priceHistory) // Указываем, что Variant имеет один PriceGraph
+        .WithOne(pg => pg.Variant) // Указываем, что PriceGraph ссылается на один Variant
+        .HasForeignKey<PriceGraph>(pg => pg.VariantId) // Указываем внешний ключ
+        .OnDelete(DeleteBehavior.Cascade); // Указываем поведение при удалении
         }
     }
 }

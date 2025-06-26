@@ -38,9 +38,20 @@ namespace SaGaMarket.Storage.EfCore.Repository
         public async Task<Product?> Get(Guid productId)
         {
             return await _context.Products
-                .Include(p => p.Variants) // Загрузка связанных вариантов
-                .Include(p => p.Reviews) // Загрузка связанных отзывов
+                .Include(p => p.Variants) 
+                .Include(p => p.Reviews) 
                 .FirstOrDefaultAsync(p => p.ProductId == productId);
+        }
+
+        public async Task<Product?> Get(Guid productId, bool includeTags = false)
+        {
+            if (includeTags)
+            {
+                return await _context.Products
+                    .Include(tr => tr.Tags)
+                    .FirstOrDefaultAsync(tr => tr.ProductId == productId);
+            }
+            return await _context.Products.FindAsync(productId);
         }
 
         public async Task<List<Product>?> GetBySeller(Guid sellerId)

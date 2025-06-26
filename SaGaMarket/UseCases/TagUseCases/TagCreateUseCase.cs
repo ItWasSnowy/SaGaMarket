@@ -1,30 +1,39 @@
 ﻿using SaGaMarket.Core.Dtos;
 using SaGaMarket.Core.Entities;
 using SaGaMarket.Core.Storage.Repositories;
+using System;
+using System.Threading.Tasks;
 
-namespace SaGaMarket.Core.UseCases.Tags
+namespace SaGaMarket.Core.UseCases.TagUseCases
 {
-    public class CreateTagUseCase
+    public class TagCreateUseCase
     {
         private readonly ITagRepository _tagRepository;
 
-        public CreateTagUseCase(ITagRepository tagRepository)
+        public TagCreateUseCase(ITagRepository tagRepository)
         {
             _tagRepository = tagRepository;
         }
 
-        public async Task<TagDto> Handle(TagDto tagDto)
+        public async Task<string> Handle(CreateTagRequest request)
         {
-            if (string.IsNullOrWhiteSpace(tagDto.TagId))
-                throw new ArgumentException("Tag ID cannot be empty");
+            var tagDto = new TagDto
+            {
+                TagId = request.TagId
+            };
 
-            var tagId = tagDto.TagId.ToLowerInvariant().Trim();
+           
+            var tag = new Tag(tagDto);
 
-            //if (await _tagRepository.Exists(tagId))
-            //    throw new InvalidOperationException($"Tag '{tagId}' already exists");
-
-            var createdTagId = await _tagRepository.Create(new Tag(tagId));
-            return new TagDto(createdTagId);
+            
+            var createdTagId = await _tagRepository.Create(tag);
+            return createdTagId;
         }
+        
     }
+    public class CreateTagRequest
+    {
+        public string TagId { get; set; } = string.Empty;
+    }
+
 }

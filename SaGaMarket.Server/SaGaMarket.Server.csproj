@@ -7,11 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
+    <ProjectReference Include="..\SaGaMarket.Storage.EfCore\SaGaMarket.Storage.EfCore.csproj" />
+    <ProjectReference Include="..\SaGaMarket\SaGaMarket.Core.csproj" />
   </ItemGroup>
 
 </Project>

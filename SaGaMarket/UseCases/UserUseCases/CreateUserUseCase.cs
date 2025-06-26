@@ -17,10 +17,11 @@ namespace SaGaMarket.Core.UseCases.UserUseCases
         {
             _userRepository = userRepository;
         }
-        public async Task Handle(UserDto userDto)
+        public async Task<Guid> Handle(UserDto userDto)
         {
             var user = new User(userDto);
             await _userRepository.Create(user);
+            return user.UserId; // Возвращаем идентификатор созданного пользователя
         }
     }
 }
