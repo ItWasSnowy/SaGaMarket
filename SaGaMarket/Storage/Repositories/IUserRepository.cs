@@ -1,6 +1,6 @@
 ﻿using SaGaMarket.Core.Entities;
 
-namespace TourGuide.Core.Storage.Repositories;
+namespace SaGaMarket.Core.Storage.Repositories;
 
 public interface IUserRepository
 {

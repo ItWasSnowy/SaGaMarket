@@ -4,7 +4,7 @@ namespace SaGaMarket.Core.Dtos;
 
 public class TagDto
 {
-    public string TagName { get; set; }
+    public string TagId { get; set; }
 
     //Связи ef
 
@@ -13,6 +13,6 @@ public class TagDto
     public TagDto() { }
     public TagDto(Tag tag)
     {
-        TagName = tag.TagName;
+        TagId = tag.TagId;
     }
 }

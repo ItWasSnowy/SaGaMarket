@@ -11,14 +11,9 @@ public class Comment
     public DateTime TimeCreate { get; set; }
     public DateTime TimeLastUpdate { get; set; }
 
-
-
     // Navigation properties
     public User Author { get; set; }
     public Review Review { get; set; }
-
-
-
 
     public Comment()
     {

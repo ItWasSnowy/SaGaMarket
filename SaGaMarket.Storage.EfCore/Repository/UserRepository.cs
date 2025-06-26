@@ -1,6 +1,6 @@
 ﻿using SaGaMarket.Core.Entities;
 using SaGaMarket.Infrastructure.Data;
-using TourGuide.Core.Storage.Repositories;
+using SaGaMarket.Core.Storage.Repositories;
 
 namespace SaGaMarket.Storage.EfCore.Repository;
 

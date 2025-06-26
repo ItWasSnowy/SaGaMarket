@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SaGaMarket.Core.Entities;
 using SaGaMarket.Infrastructure.Data;
-using TourGuide.Core.Storage.Repositories;
+using SaGaMarket.Core.Storage.Repositories;
 
 namespace SaGaMarket.Storage.EfCore.Repository
 {
@@ -42,7 +42,7 @@ namespace SaGaMarket.Storage.EfCore.Repository
                 .Where(c => c.AuthorId == AuthorId) 
                 .ToListAsync();
         }
-        public async Task<List<Comment>?> GetByTourRoute(Guid reviewId)
+        public async Task<List<Comment>?> GetByReview(Guid reviewId)
         {
             return await _context.Comments
                 .Where(r => r.ReviewId == reviewId)

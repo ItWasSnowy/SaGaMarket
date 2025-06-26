@@ -4,7 +4,7 @@ namespace SaGaMarket.Core.Entities;
 
 public class Tag
 {
-    public string TagName { get; set; }
+    public string TagId { get; set; }
 
     // Navigation properties
     public List<Product> Products { get; set; } = new();
@@ -13,7 +13,7 @@ public class Tag
     public Tag() { }
     public Tag (TagDto tagDto) 
     {
-        TagName = tagDto.TagName;
+        TagId = tagDto.TagId;
     }
 
 }

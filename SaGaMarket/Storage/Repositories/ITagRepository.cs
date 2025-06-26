@@ -1,6 +1,6 @@
 ﻿using SaGaMarket.Core.Entities;
 
-namespace TourGuide.Core.Storage.Repositories
+namespace SaGaMarket.Core.Storage.Repositories
 {
     public interface ITagRepository
     {
@@ -8,7 +8,7 @@ namespace TourGuide.Core.Storage.Repositories
         Task<bool> Update(Tag tag);
         Task Delete(string tagId);
         Task<Tag?> Get(string tagId);
-        
+        Task<List<Tag>?> GetAllTagsByProduct(Guid productId);
     }
 
 }

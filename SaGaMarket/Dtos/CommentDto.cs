@@ -6,6 +6,7 @@ public class CommentDto
 {
     public Guid CommentId { get; set; }
     public Guid AuthorId { get; set; } // Внешний ключ
+    public Guid ReviewId { get; set; }
     public string CommentText { get; set; } = string.Empty;
     public DateTime TimeCreate { get; set; }
     public DateTime TimeLastUpdate { get; set; }

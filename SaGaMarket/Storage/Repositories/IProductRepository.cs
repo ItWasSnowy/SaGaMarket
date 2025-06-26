@@ -8,4 +8,5 @@ public interface IProductRepository
     Task<bool> Update(Product product);
     Task Delete(Guid productId);
     Task<Product?> Get(Guid productId);
+    Task<Product> Get(Guid productId, bool includeTags = false);
 }

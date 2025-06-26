@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SaGaMarket.Core.Entities;
-using TourGuide.Core.Storage.Repositories;
+using SaGaMarket.Core.Storage.Repositories;
 using SaGaMarket.Infrastructure.Data;
 
 namespace SaGaMarket.Storage.EfCore.Repository
@@ -24,11 +24,11 @@ namespace SaGaMarket.Storage.EfCore.Repository
                 throw new ArgumentNullException(nameof(tag));
 
             // Нормализуем регистр TagId
-            tag.TagName = tag.TagName.ToLowerInvariant();
+            tag.TagId = tag.TagId.ToLowerInvariant();
 
             _context.Tags.Add(tag);
             await _context.SaveChangesAsync();
-            return tag.TagName;
+            return tag.TagId;
         }
 
         public async Task<bool> Update(Tag tag)
@@ -37,9 +37,9 @@ namespace SaGaMarket.Storage.EfCore.Repository
                 throw new ArgumentNullException(nameof(tag));
 
             // Нормализуем регистр TagId
-            tag.TagName = tag.TagName.ToLowerInvariant();
+            tag.TagId = tag.TagId.ToLowerInvariant();
 
-            var existingTag = await _context.Tags.FindAsync(tag.TagName);
+            var existingTag = await _context.Tags.FindAsync(tag.TagId);
             if (existingTag == null)
                 return false;
 
@@ -79,7 +79,7 @@ namespace SaGaMarket.Storage.EfCore.Repository
 
             var normalizedTagId = tagId.ToLowerInvariant();
             return await _context.Tags
-                .FirstOrDefaultAsync(t => t.TagName == normalizedTagId);
+                .FirstOrDefaultAsync(t => t.TagId == normalizedTagId);
         }
 
         public async Task<List<Tag>> GetAllTagsByProduct(Guid tourRouteId)
