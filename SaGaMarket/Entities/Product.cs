@@ -7,16 +7,10 @@ public class Product
 {
     public Guid ProductId { get; set; }
     public Guid SellerId { get; set; }
-
-
-
-
-
     public string Category { get; set; } = string.Empty;
     public double AverageRating { get; set; } = double.NaN;
     public List<Guid> ReviewIds { get; set; } = [];
 
-    //Тут должны быть связи для EntityFramework
     public User Seller { get; set; }
     public List<Variant> Variants { get; set; } = new();
     public List<Review> Reviews { get; set; } = new();

@@ -13,11 +13,6 @@ public class User
     // Пользователь должен будет выбрать какой аккаунт ему создать, аккаунт покупателя или продавца
     public Role Role { get; set; } = Role.customer; 
 
-
-
-
-
-
     //На подобии того как Тур маршрут хранит в себе список айдишников всех точек и комментов, Юзер будет хранить в себе список всех его желаемых товаров, товаров в корзине и заказанные товары.
     public List<Guid> ProductFromCartIds { get; set; } = [];
     public List<Guid> ProductFromFavoriteIds { get; set; } = [];

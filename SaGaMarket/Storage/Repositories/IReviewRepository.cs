@@ -4,8 +4,8 @@ namespace SaGaMarket.Core.Storage.Repositories;
 
 public interface IReviewRepository
 {
-    Task<string> Create(Review review);
+    Task<Guid> Create(Review review);
     Task<bool> Update(Review review);
-    Task Delete(string reviewId);
-    Task<Review?> Get(string reviewId);
+    Task Delete(Guid reviewId);
+    Task<Review?> Get(Guid reviewId);
 }

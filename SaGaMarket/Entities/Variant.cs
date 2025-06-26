@@ -6,14 +6,9 @@ public class Variant
     public Guid ProductId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-
     public decimal Price { get; set; }
-
     //public List<PriceGraph> PriceHistory { get; set; }
     public List<PriceGraph> priceGraph { get; set; }
-
-
-
     // Navigation properties
     public Product Product { get; set; }
     public List<PriceGraph> PriceHistory { get; set; } = new();

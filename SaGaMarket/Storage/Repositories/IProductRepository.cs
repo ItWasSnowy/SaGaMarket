@@ -4,8 +4,8 @@ namespace SaGaMarket.Core.Storage.Repositories;
 
 public interface IProductRepository
 {
-    Task<string> Create(Product product);
+    Task<Guid> Create(Product product);
     Task<bool> Update(Product product);
-    Task Delete(string productId);
-    Task<Product?> Get(string productId);
+    Task Delete(Guid productId);
+    Task<Product?> Get(Guid productId);
 }
