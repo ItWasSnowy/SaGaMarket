@@ -7,15 +7,16 @@ public class Variant
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public decimal Price { get; set; }
-    // Navigation properties
-    public Product Product { get; set; }
-    public PriceGraph priceHistory { get; set; } = new();
+
+    // Навигационные свойства
+    public Product Product { get; set; } = null!; 
+    public PriceGraph PriceHistory { get; set; } = new();
 }
-public class PriceGraph()
+public class PriceGraph
 {
     public decimal Price { get; set; }
-    public DateTime LastPriceChange { get; set; }
-    // Внешний ключ для Variant
+    public DateTime LastPriceChange { get; set; } = DateTime.UtcNow;
+
     public Guid VariantId { get; set; }
-    public Variant Variant { get; set; } // Навигационное свойство
+    public Variant Variant { get; set; } = null!;
 }

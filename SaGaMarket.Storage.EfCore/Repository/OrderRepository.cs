@@ -1,78 +1,103 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SaGaMarket.Core.Entities;
 using SaGaMarket.Core.Storage.Repositories;
 using SaGaMarket.Infrastructure.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace SaGaMarket.Storage.EfCore.Repository
+public class OrderRepository : IOrderRepository
 {
-    public class OrderRepository : IOrderRepository
+    private readonly SaGaMarketDbContext _context;
+    private readonly ILogger<OrderRepository> _logger;
+
+    public OrderRepository(SaGaMarketDbContext context, ILogger<OrderRepository> logger)
     {
-        private readonly SaGaMarketDbContext _context;
+        _context = context;
+        _logger = logger;
+    }
 
-        public OrderRepository(SaGaMarketDbContext context)
-        {
-            _context = context;
-        }
+    public async Task<Guid> Create(Order order)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync();
 
-        public async Task<Guid> Create(Order order)
+        try
         {
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation("Order created with ID: {OrderId}", order.OrderId);
             return order.OrderId;
         }
-
-        public async Task Delete(Guid orderId)
+        catch (Exception ex)
         {
-            var order = await _context.Orders.FindAsync(orderId);
-            if (order != null)
-            {
-                _context.Orders.Remove(order);
-                await _context.SaveChangesAsync();
-            }
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Error creating order");
+            throw new DbUpdateException("Failed to create order", ex);
+        }
+    }
+
+    public async Task Delete(Guid orderId)
+    {
+        var order = await _context.Orders
+            .Include(o => o.OrderItems)
+            .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+        if (order == null) return;
+
+        try
+        {
+            _context.Orders.Remove(order);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting order with ID: {OrderId}", orderId);
+            throw;
+        }
+    }
+
+    public async Task<Order?> Get(Guid orderId)
+    {
+        return await _context.Orders
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Variant)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.OrderId == orderId);
+    }
+
+    public async Task<List<Order>> GetByCustomer(Guid customerId)
+    {
+        return await _context.Orders
+            .Where(o => o.CustomerId == customerId)
+            .Include(o => o.OrderItems)
+            .ToListAsync();
+    }
+
+    public async Task<bool> Update(Order order)
+    {
+        if (order == null)
+        {
+            throw new ArgumentNullException(nameof(order), "Order cannot be null.");
         }
 
-        public async Task<Order?> Get(Guid orderId)
+        var existingOrder = await _context.Orders.FindAsync(order.OrderId);
+        if (existingOrder == null)
         {
-            return await _context.Orders
-                .Include(o => o.Products)
-                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+            return false;
         }
 
-        public async Task<List<Order>?> GetByCustomer(Guid customerId)
+        existingOrder.TotalPrice = order.TotalPrice;
+
+        try
         {
-            return await _context.Orders
-                .Where(o => o.CustomerId == customerId)
-                .ToListAsync();
+            await _context.SaveChangesAsync();
+            return true;
         }
-
-        public async Task<bool> Update(Order order)
+        catch (DbUpdateException ex)
         {
-            if (order == null)
-            {
-                throw new ArgumentNullException(nameof(order), "Order cannot be null.");
-            }
-
-            var existingOrder = await _context.Orders.FindAsync(order.OrderId);
-            if (existingOrder == null)
-            {
-                return false;
-            }
-
-            existingOrder.TotalPrice = order.TotalPrice;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (DbUpdateException ex)
-            {
-                throw new Exception("An error occurred while updating the order.", ex);
-            }
+            throw new Exception("An error occurred while updating the order.", ex);
         }
     }
 }

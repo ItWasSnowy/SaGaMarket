@@ -7,7 +7,7 @@ using SaGaMarket.Core.UseCases.CommentUseCases;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using static SaGaMarket.Core.UseCases.CommentUseCases.CreateCommentUseCase;
+
 
 namespace SaGaMarket.Server.Controllers
 {
@@ -38,14 +38,12 @@ namespace SaGaMarket.Server.Controllers
             _updateCommentUseCase = updateCommentUseCase;
         }
 
-        [HttpPost("create")]
-        [ProducesResponseType<Guid>(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<Guid>> CreateComment([FromBody] CreateCommentRequest request)
+        [HttpPost]
+        public async Task<IActionResult> CreateComment([FromBody] CreateCommentRequest request)
         {
             try
             {
-                var commentId = await _createCommentUseCase.Handle(request, Guid.NewGuid()); // Здесь вы можете передать реальный UserId
+                var commentId = await _createCommentUseCase.Handle(request);
                 return Ok(commentId);
             }
             catch (Exception ex)
@@ -61,7 +59,7 @@ namespace SaGaMarket.Server.Controllers
         {
             try
             {
-                await _deleteCommentUseCase.Handle(commentId, Guid.NewGuid()); // Здесь вы можете передать реальный UserId
+                await _deleteCommentUseCase.Handle(commentId/*, Guid.NewGuid()*/); 
                 return Ok();
             }
             catch (InvalidOperationException ex)
@@ -109,7 +107,7 @@ namespace SaGaMarket.Server.Controllers
         {
             try
             {
-                await _updateCommentUseCase.Handle(request.CommentId, request.NewCommentText, Guid.NewGuid()); // Здесь вы можете передать реальный UserId
+                await _updateCommentUseCase.Handle(request.CommentId, request.NewCommentText);
                 return Ok();
             }
             catch (ArgumentException ex)

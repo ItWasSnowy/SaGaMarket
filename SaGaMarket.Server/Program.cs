@@ -8,6 +8,12 @@ using SaGaMarket.Storage.EfCore.Repository;
 using SaGaMarket.Core.UseCases.ReviewUseCases;
 using SaGaMarket.Core.UseCases.ProductUseCases;
 using SaGaMarket.Core.UseCases.UserUseCases;
+using SaGaMarket.Core.UseCases.VariantUseCases;
+using SaGaMarket.Core.UseCases.TagUseCases;
+using TourGuide.Core.UseCases.TagUseCases;
+using SaGaMarket.Core.UseCases.Tags;
+using SaGaMarket.Core.UseCases.OrderUseCases;
+using System.Text.Json.Serialization;
 
 namespace SaGaMarket.Server
 {
@@ -28,7 +34,7 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<GetCommentsByReviewUseCase>();
             builder.Services.AddScoped<UpdateCommentUseCase>();
             builder.Services.AddScoped<ICommentRepository, CommentRepository>();
-            //----------------------------
+            //------------------------------
             builder.Services.AddScoped<CreateReviewUseCase>();
             builder.Services.AddScoped<DeleteReviewUseCase>();
             builder.Services.AddScoped<GetReviewUseCase>();
@@ -47,9 +53,33 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<UpdateUserUseCase>();
             builder.Services.AddScoped<GetByEmailUserUseCase>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
-
-
-            builder.Services.AddControllers();
+            //-------------------------------
+            builder.Services.AddScoped<CreateVariantUseCase>();
+            builder.Services.AddScoped<DeleteVariantUseCase>();
+            builder.Services.AddScoped<GetVariantUseCase>();
+            builder.Services.AddScoped<UpdateVariantUseCase>();
+            builder.Services.AddScoped<IVariantRepository, VariantRepository>();
+            //-------------------------------
+            builder.Services.AddScoped<TagCreateUseCase>();
+            builder.Services.AddScoped<DeleteTagUseCase>();
+            builder.Services.AddScoped<GetTagUseCase>();
+            builder.Services.AddScoped<AddTagToProductUseCase>();
+            builder.Services.AddScoped<RemoveTagFromProductUseCase>();
+            builder.Services.AddScoped<GetAllTagsByProductUseCase>();
+            builder.Services.AddScoped<ITagRepository, TagRepository>();
+            //------------------------------
+            builder.Services.AddScoped<CreateOrderUseCase>();
+            builder.Services.AddScoped<DeleteOrderUseCase>();
+            builder.Services.AddScoped<GetOrderUseCase>();
+            builder.Services.AddScoped<UpdateOrderUseCase>();
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            //-------------------------------
+            builder.Services.AddControllers()
+     .AddJsonOptions(options =>
+     {
+         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+         options.JsonSerializerOptions.WriteIndented = true;
+     });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

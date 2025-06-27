@@ -25,69 +25,112 @@ namespace SaGaMarket.Infrastructure.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
 
-            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+            modelBuilder.Entity<Comment>(entity =>
+            {
+                entity.HasOne(c => c.Author)
+                    .WithMany(u => u.Comments)
+                    .HasForeignKey(c => c.AuthorId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Comments)
-                .WithOne()
-                .HasForeignKey(c => c.AuthorId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(c => c.Review)
+                    .WithMany(r => r.Comments)
+                    .HasForeignKey(c => c.ReviewId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Reviews)
-                .WithOne()
-                .HasForeignKey(r => r.AuthorId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(c => c.TimeCreate)
+                    .HasDefaultValueSql("NOW()");
 
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Orders)
-                .WithOne()
-                .HasForeignKey(o => o.CustomerId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(c => c.TimeLastUpdate)
+                    .HasDefaultValueSql("NOW()");
+            });
 
-            modelBuilder.Entity<Product>()
-                .HasOne(p => p.Seller)
-                .WithMany(u => u.ProductsForSale)
-                .HasForeignKey(p => p.SellerId)
-                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasMany(u => u.Comments)
+                    .WithOne(c => c.Author)
+                    .HasForeignKey(c => c.AuthorId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Product>()
-                .HasMany(p => p.Variants)
-                .WithOne()
-                .HasForeignKey(v => v.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(u => u.Reviews)
+                    .WithOne(r => r.Author)
+                    .HasForeignKey(r => r.AuthorId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Product>()
-                .HasMany(p => p.Reviews)
-                .WithOne()
-                .HasForeignKey(r => r.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(u => u.Orders)
+                    .WithOne(o => o.Customer)
+                    .HasForeignKey(o => o.CustomerId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Product>()
-                .HasMany(p => p.Tags)
-                .WithMany(t => t.Products)
-                .UsingEntity(j => j.ToTable("ProductTags"));
+                entity.HasMany(u => u.ProductsForSale)
+                    .WithOne(p => p.Seller)
+                    .HasForeignKey(p => p.SellerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
-            modelBuilder.Entity<Order>()
-                .HasMany(o => o.Products)
-                .WithMany(p => p.Orders)
-                .UsingEntity(j => j.ToTable("OrderProducts"));
+            modelBuilder.Entity<Product>(entity =>
+            {
+                entity.HasMany(p => p.Variants)
+                    .WithOne(v => v.Product)
+                    .HasForeignKey(v => v.ProductId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Review>()
-                .HasMany(r => r.Comments)
-                .WithOne()
-                .HasForeignKey(c => c.ReviewId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(p => p.Reviews)
+                    .WithOne(r => r.Product)
+                    .HasForeignKey(r => r.ProductId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(p => p.Tags)
+                    .WithMany(t => t.Products)
+                    .UsingEntity(j => j.ToTable("ProductTags"));
+
+                entity.HasMany(p => p.Orders)
+                    .WithMany(o => o.Products)
+                    .UsingEntity(j => j.ToTable("OrderProducts"));
+            });
+
+            modelBuilder.Entity<Variant>(entity =>
+            {
+                entity.HasOne(v => v.PriceHistory)
+                    .WithOne(pg => pg.Variant)
+                    .HasForeignKey<PriceGraph>(pg => pg.VariantId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Review>(entity =>
+            {
+                entity.HasMany(r => r.Comments)
+                    .WithOne(c => c.Review)
+                    .HasForeignKey(c => c.ReviewId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
             modelBuilder.Entity<PriceGraph>()
-        .HasKey(pg => pg.VariantId); // Указываем, что VariantId является первичным ключом
-            modelBuilder.Entity<Variant>()
-        .HasOne(v => v.priceHistory) // Указываем, что Variant имеет один PriceGraph
-        .WithOne(pg => pg.Variant) // Указываем, что PriceGraph ссылается на один Variant
-        .HasForeignKey<PriceGraph>(pg => pg.VariantId) // Указываем внешний ключ
-        .OnDelete(DeleteBehavior.Cascade); // Указываем поведение при удалении
+                .HasKey(pg => pg.VariantId);
+
+            modelBuilder.Entity<Order>(entity =>
+            {
+                entity.ToTable("Orders");
+                entity.HasKey(o => o.OrderId);
+                entity.Property(o => o.TotalPrice).HasColumnType("decimal(18,2)");
+                entity.HasMany(o => o.OrderItems)
+                      .WithOne(oi => oi.Order)
+                      .HasForeignKey(oi => oi.OrderId);
+            });
+
+            // Конфигурация OrderItem
+            modelBuilder.Entity<OrderItem>(entity =>
+            {
+                entity.ToTable("OrderItems");
+                entity.HasKey(oi => oi.OrderItemId);
+                entity.Property(oi => oi.UnitPrice).HasColumnType("decimal(18,2)");
+                entity.HasOne(oi => oi.Product)
+                      .WithMany()
+                      .HasForeignKey(oi => oi.ProductId);
+                entity.HasOne(oi => oi.Variant)
+                      .WithMany()
+                      .HasForeignKey(oi => oi.VariantId);
+            });
         }
     }
 }
