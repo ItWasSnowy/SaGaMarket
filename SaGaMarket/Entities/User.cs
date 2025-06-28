@@ -16,7 +16,11 @@ public class User
     //На подобии того как Тур маршрут хранит в себе список айдишников всех точек и комментов, Юзер будет хранить в себе список всех его желаемых товаров, товаров в корзине и заказанные товары.
     public List<Guid> ProductFromCartIds { get; set; } = [];
     public List<Guid> ProductFromFavoriteIds { get; set; } = [];
-    public List<Guid> ProductFromOrderIds { get; set; } = [];
+
+    public bool CanPurchase => Role == Role.customer ||
+                            (Role == Role.seller && ProductFromCartIds.Any());
+
+    public bool CanSell => Role == Role.seller;
 
     //name, email, passwordHash, createdAt, updatedAt будут в Identity бд
 
@@ -35,9 +39,6 @@ public class User
     {
         UserId = userDto.UserId;
         Role = userDto.Role;
-        ProductFromCartIds = userDto.ProductFromCartIds;
-        ProductFromFavoriteIds = userDto.ProductFromFavoriteIds;
-        ProductFromOrderIds = userDto.ProductFromCartIds;
     }
 }
 

@@ -21,7 +21,7 @@ namespace SaGaMarket.Core.UseCases.UserUseCases
         {
             var user = new User(userDto);
             await _userRepository.Create(user);
-            return user.UserId; // Возвращаем идентификатор созданного пользователя
+            return user.UserId;
         }
     }
 }

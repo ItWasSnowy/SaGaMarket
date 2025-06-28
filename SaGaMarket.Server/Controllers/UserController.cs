@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SaGaMarket.Core.Dtos;
+using SaGaMarket.Core.Services;
 using SaGaMarket.Core.UseCases.UserUseCases;
 using System;
 using System.Threading.Tasks;
@@ -14,17 +15,21 @@ namespace SaGaMarket.Server.Controllers
         private readonly GetUserUseCase _getUserUseCase;
         private readonly UpdateUserUseCase _updateUserUseCase;
         private readonly DeleteUserUseCase _deleteUserUseCase;
+        private readonly GetUserRoleUseCase _getUserRoleUseCase;
 
         public UserController(
             CreateUserUseCase createUserUseCase,
             GetUserUseCase getUserUseCase,
             UpdateUserUseCase updateUserUseCase,
-            DeleteUserUseCase deleteUserUseCase)
+            DeleteUserUseCase deleteUserUseCase,
+            GetUserRoleUseCase getUserRoleUseCase)
         {
             _createUserUseCase = createUserUseCase;
             _getUserUseCase = getUserUseCase;
             _updateUserUseCase = updateUserUseCase;
             _deleteUserUseCase = deleteUserUseCase;
+            _getUserRoleUseCase = getUserRoleUseCase;
+            _getUserRoleUseCase = getUserRoleUseCase;
         }
 
         [HttpPost]
@@ -89,5 +94,40 @@ namespace SaGaMarket.Server.Controllers
                 return StatusCode(500, "An error occurred while deleting the user.");
             }
         }
+
+        [HttpGet("{userId}/role")]
+        [ProducesResponseType(typeof(UserRoleInfoDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetUserRole(Guid userId)
+        {
+            try
+            {
+                var roleInfo = await _getUserRoleUseCase.Execute(userId);
+
+               
+
+                return Ok(new
+                {
+                    UserId = userId,
+                    Role = roleInfo.Role.ToString(),
+                    roleInfo.CanPurchase,
+                    roleInfo.CanSell,
+                    roleInfo.IsAdmin,
+                    roleInfo.RoleDescription
+                });
+            }
+            catch (ArgumentException ex)
+            {
+               
+                return NotFound(new { Error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+               
+                return StatusCode(500, new { Error = "Internal server error" });
+            }
+        }
     }
+
 }

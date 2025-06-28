@@ -7,9 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SaGaMarket.Core", "SaGaMark
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{EA68765D-CE33-4114-BB16-9FFEB1BBE973}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SaGaMarket.Storage.EfCore", "SaGaMarket.Storage.EfCore\SaGaMarket.Storage.EfCore.csproj", "{2429EBC0-809B-4C4C-8EDD-8ED39AEA252F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SaGaMarket.Storage.EfCore", "SaGaMarket.Storage.EfCore\SaGaMarket.Storage.EfCore.csproj", "{2429EBC0-809B-4C4C-8EDD-8ED39AEA252F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SaGaMarket.Server", "SaGaMarket.Server\SaGaMarket.Server.csproj", "{068AFE1B-19E0-4089-95CE-1FBDE64EF2D7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SaGaMarket.Server", "SaGaMarket.Server\SaGaMarket.Server.csproj", "{068AFE1B-19E0-4089-95CE-1FBDE64EF2D7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

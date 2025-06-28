@@ -7,7 +7,8 @@ public interface IUserRepository
     public Task<Guid> Create(User user);
     public Task Update(User user);
     public Task Delete(Guid userId);
-
+    public Task<Role?> GetUserRoleAsync(Guid userId);
+    public Task<bool> IsSellerWithCustomerFunctionalityAsync(Guid userId);
     public Task<User?> Get(Guid userId);
     public Task<User?> GetByEmail(string email);
 }

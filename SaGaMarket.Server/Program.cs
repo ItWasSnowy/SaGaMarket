@@ -14,6 +14,7 @@ using TourGuide.Core.UseCases.TagUseCases;
 using SaGaMarket.Core.UseCases.Tags;
 using SaGaMarket.Core.UseCases.OrderUseCases;
 using System.Text.Json.Serialization;
+using SaGaMarket.Core.Services;
 
 namespace SaGaMarket.Server
 {
@@ -74,6 +75,15 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<UpdateOrderUseCase>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             //-------------------------------
+            builder.Services.AddScoped<IUserRoleService, UserRepository>();
+            builder.Services.AddScoped<GetUserRoleUseCase>();
+            builder.Services.AddScoped<AddToCartUseCase>();
+            builder.Services.AddScoped<RemoveFromCartUseCase>();
+            builder.Services.AddScoped<AddToFavoritesUseCase>();
+            builder.Services.AddScoped<RemoveFromFavoritesUseCase>();
+            builder.Services.AddScoped<ICartRepository, CartRepository>();
+
+
             builder.Services.AddControllers()
      .AddJsonOptions(options =>
      {

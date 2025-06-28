@@ -1,16 +1,22 @@
 ﻿using SaGaMarket.Core.Entities;
 using SaGaMarket.Infrastructure.Data;
 using SaGaMarket.Core.Storage.Repositories;
+using SaGaMarket.Core.Services;
+using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace SaGaMarket.Storage.EfCore.Repository;
 
-public class UserRepository : IUserRepository
+public class UserRepository : IUserRepository, IUserRoleService
 {
     private SaGaMarketDbContext _context;
+    private readonly ILogger<UserRepository> _logger;
 
-    public UserRepository(SaGaMarketDbContext context)
+    public UserRepository(SaGaMarketDbContext context, ILogger<UserRepository> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     public async Task<Guid> Create(User user)
@@ -50,5 +56,55 @@ public class UserRepository : IUserRepository
         _context.Update(user);
         await _context.SaveChangesAsync();
     }
+
+    public Task DisableCustomerFunctionality(Guid sellerId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task EnableCustomerFunctionality(Guid sellerId)
+    {
+        var user = await _context.Users.FindAsync(sellerId);
+        if (user?.Role != Role.seller)
+            throw new InvalidOperationException("User is not a seller");
+
+        // Логика активации функционала покупателя
+        // Например, установка флага или добавление в специальную таблицу
+    }
+
+    public async Task<Role?> GetUserRoleAsync(Guid userId)
+    {
+        try
+        {
+            return await _context.Users
+                .Where(u => u.UserId == userId)
+                .Select(u => u.Role)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user role for {UserId}", userId);
+            throw;
+        }
+    }
+
+    public async Task<bool> IsSellerWithCustomerFunctionalityAsync(Guid userId)
+    {
+        try
+        {
+            return await _context.Users
+                .Where(u => u.UserId == userId &&
+                           u.Role == Role.seller &&
+                           u.ProductFromCartIds.Any())
+                .AnyAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking seller functionality for {UserId}", userId);
+            throw;
+        }
+    }
+
 }
+
 
