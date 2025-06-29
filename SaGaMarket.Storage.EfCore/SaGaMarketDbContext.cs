@@ -16,11 +16,12 @@ namespace SaGaMarket.Infrastructure.Data
         public DbSet<Comment> Comments { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<Variant> Variants { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
 
         public SaGaMarketDbContext(DbContextOptions<SaGaMarketDbContext> options) : base(options)
         {
-            Database.EnsureDeleted();
-            Database.EnsureCreated();
+            //Database.EnsureDeleted();
+            //Database.EnsureCreated();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

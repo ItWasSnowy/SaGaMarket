@@ -26,16 +26,14 @@ public class RemoveFromCartUseCase
             if (user == null)
                 throw new ArgumentException("User  not found");
 
-            // Проверяем, что товар в корзине
             if (!user.ProductFromCartIds.Contains(request.VariantId))
             {
                 _logger.LogWarning("Variant {VariantId} not found in cart for user {User Id}", request.VariantId, userId);
-                return false; // Товар не найден в корзине
+                return false;
             }
 
             user.ProductFromCartIds.Remove(request.VariantId);
 
-            // 4. Сохраняем изменения
             return await _cartRepository.SaveChangesAsync();
         }
         catch (Exception ex)

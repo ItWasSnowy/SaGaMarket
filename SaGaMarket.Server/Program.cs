@@ -73,6 +73,7 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<DeleteOrderUseCase>();
             builder.Services.AddScoped<GetOrderUseCase>();
             builder.Services.AddScoped<UpdateOrderUseCase>();
+            builder.Services.AddScoped<AddVariantToOrderFromCartUseCase>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             //-------------------------------
             builder.Services.AddScoped<IUserRoleService, UserRepository>();
@@ -82,6 +83,7 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<AddToFavoritesUseCase>();
             builder.Services.AddScoped<RemoveFromFavoritesUseCase>();
             builder.Services.AddScoped<ICartRepository, CartRepository>();
+
 
 
             builder.Services.AddControllers()

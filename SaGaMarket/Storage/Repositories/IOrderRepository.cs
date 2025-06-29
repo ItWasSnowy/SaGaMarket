@@ -8,4 +8,5 @@ public interface IOrderRepository
     Task<bool> Update(Order order);
     Task Delete(Guid orderId);
     Task<Order?> Get(Guid orderId);
+    Task<Guid> AddOrderItem(OrderItem orderItem);
 }

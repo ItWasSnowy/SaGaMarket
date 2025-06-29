@@ -27,21 +27,18 @@ public class AddToFavoritesUseCase
             if (user == null)
                 throw new ArgumentException("User  not found");
 
-            // Проверяем товар
             var product = await _productRepository.Get(request.ProductId);
             if (product == null)
                 throw new ArgumentException("Product not found");
 
-            // Проверяем, что товар уже в избранном
             if (user.ProductFromFavoriteIds.Contains(request.ProductId))
             {
                 _logger.LogWarning("Product {ProductId} already in favorites", request.ProductId);
-                return true; // Уже в избранном
+                return true; 
             }
 
             user.ProductFromFavoriteIds.Add(request.ProductId);
 
-            // Сохраняем изменения
             return await _cartRepository.SaveChangesAsync();
         }
         catch (Exception ex)

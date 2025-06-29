@@ -13,13 +13,16 @@ namespace SaGaMarket.Server.Controllers
         private readonly GetOrderUseCase _getOrderUseCase;
         private readonly UpdateOrderUseCase _updateOrderUseCase;
         private readonly DeleteOrderUseCase _deleteOrderUseCase;
+        private readonly AddVariantToOrderFromCartUseCase _addVariantToOrderFromCartUseCase;
 
         public OrderController(
+            AddVariantToOrderFromCartUseCase addVariantToOrderFromCartUseCase,
             CreateOrderUseCase createOrderUseCase,
             GetOrderUseCase getOrderUseCase,
             UpdateOrderUseCase updateOrderUseCase,
             DeleteOrderUseCase deleteOrderUseCase)
         {
+            _addVariantToOrderFromCartUseCase = addVariantToOrderFromCartUseCase;
             _createOrderUseCase = createOrderUseCase;
             _getOrderUseCase = getOrderUseCase;
             _updateOrderUseCase = updateOrderUseCase;
@@ -96,6 +99,22 @@ namespace SaGaMarket.Server.Controllers
             {
                 return StatusCode(500, "An error occurred while deleting the order.");
             }
+        }
+
+        [HttpPost("{orderId}/add-variant")]
+        public async Task<IActionResult> AddVariantToOrder([FromBody] AddVariantToOrderFromCartUseCase.AddVariantToOrderRequest request, [FromRoute] Guid orderId)
+        {
+            if (request == null)
+            {
+                return BadRequest("Invalid order item data.");
+            }
+            var orderItemId = await _addVariantToOrderFromCartUseCase.Handle(request, orderId);
+            return CreatedAtAction(nameof(GetOrderItem), new { id = orderItemId }, null);
+        }
+        [HttpGet]
+        public IActionResult GetOrderItem(Guid id)
+        {
+            return Ok();
         }
     }
 }

@@ -99,5 +99,12 @@ public class OrderRepository : IOrderRepository
         {
             throw new Exception("An error occurred while updating the order.", ex);
         }
+
+    }
+    public async Task<Guid> AddOrderItem(OrderItem orderItem)
+    {
+        _context.OrderItems.Add(orderItem);
+        await _context.SaveChangesAsync();
+        return orderItem.OrderItemId;
     }
 }

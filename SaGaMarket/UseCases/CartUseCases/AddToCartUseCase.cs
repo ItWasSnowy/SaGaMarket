@@ -30,11 +30,9 @@ public class AddToCartUseCase
             if (user == null)
                 throw new ArgumentException("User not found");
 
-            // Проверяем, что пользователь не является ТОЛЬКО продавцом
             if (user.Role == Role.seller && !user.ProductFromCartIds.Any())
                 throw new InvalidOperationException("Sellers must have customer functionality enabled to add items to cart");
 
-            // 2. Проверяем товар и вариант
             var product = await _productRepository.Get(request.ProductId);
             if (product == null)
                 throw new ArgumentException("Product not found");
@@ -43,16 +41,14 @@ public class AddToCartUseCase
             if (variant == null || variant.ProductId != request.ProductId)
                 throw new ArgumentException("Variant not found or doesn't belong to product");
 
-            // 3. Добавляем в корзину (упрощенная реализация)
             if (user.ProductFromCartIds.Contains(request.VariantId))
             {
                 _logger.LogWarning("Variant {VariantId} already in cart", request.VariantId);
-                return true; // Уже в корзине
+                return true;
             }
 
             user.ProductFromCartIds.Add(request.VariantId);
 
-            // 4. Сохраняем изменения
             return await _cartRepository.SaveChangesAsync();
         }
         catch (Exception ex)
