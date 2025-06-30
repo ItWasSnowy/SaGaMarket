@@ -82,9 +82,19 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<RemoveFromCartUseCase>();
             builder.Services.AddScoped<AddToFavoritesUseCase>();
             builder.Services.AddScoped<RemoveFromFavoritesUseCase>();
+            builder.Services.AddScoped<GetProductWithPagination>();
             builder.Services.AddScoped<ICartRepository, CartRepository>();
 
-
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000")
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials();
+                });
+            });
 
             builder.Services.AddControllers()
      .AddJsonOptions(options =>
@@ -92,11 +102,15 @@ namespace SaGaMarket.Server
          options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
          options.JsonSerializerOptions.WriteIndented = true;
      });
+
+
+
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
+
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -106,6 +120,11 @@ namespace SaGaMarket.Server
             }
 
             app.UseHttpsRedirection();
+
+
+            app.UseRouting();
+
+            app.UseCors("AllowAll");
 
             app.UseAuthorization();
 

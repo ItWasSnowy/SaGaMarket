@@ -14,6 +14,10 @@ public class ProductDto
     public string ProductCategory { get; set; } = string.Empty;
     public double AverageRating { get; set; } = double.NaN;
     public List<Guid> ReviewIds { get; set; } = [];
+    public string ImageUrl { get; set; }
+    public int MinPrice { get; set; }
+    public int MaxPrice { get; set; }
+    public int VariantCount { get; set; }
 
     public ProductDto() { }
     public ProductDto(Product product)

@@ -9,4 +9,6 @@ public interface IProductRepository
     Task Delete(Guid productId);
     Task<Product?> Get(Guid productId);
     Task<Product> Get(Guid productId, bool includeTags = false);
+    Task<(IEnumerable<Product> Products, int TotalCount)> GetProductsWithPaginationAsync(int page, int pageSize);
+
 }

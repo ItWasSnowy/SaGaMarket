@@ -30,6 +30,7 @@ public class CreateProductUseCase
         {
             SellerId = sellerId,
             Category = request.Category,
+            Name = request.Name,
             AverageRating = 0,
         };
 
@@ -38,6 +39,8 @@ public class CreateProductUseCase
     public class CreateProductRequest
     {
         public string Category { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+
 
     }
 }

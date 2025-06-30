@@ -24,7 +24,32 @@ namespace SaGaMarket.Storage.EfCore.Repository
             await _context.SaveChangesAsync();
             return product.ProductId;
         }
+        public async Task<(IEnumerable<Product> Products, int TotalCount)> GetProductsWithPaginationAsync(
+    int page,
+    int pageSize)
+        {
+            var query = _context.Products
+                .Include(p => p.Variants)
+                .AsNoTracking();
 
+            var totalCount = await query.CountAsync();
+
+            var products = await query
+                .OrderBy(p => p.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (products, totalCount);
+        }
+
+        public async Task<Product?> GetWithVariantsAsync(Guid productId)
+        {
+            return await _context.Products
+                .Include(p => p.Variants)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.ProductId == productId);
+        }
         public async Task Delete(Guid productId)
         {
             var product = await _context.Products.FindAsync(productId);

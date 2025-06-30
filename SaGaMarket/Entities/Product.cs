@@ -8,6 +8,7 @@ public class Product
     public Guid ProductId { get; set; }
     public Guid SellerId { get; set; }
     public string Category { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
     public double AverageRating { get; set; } = double.NaN;
     public List<Guid> ReviewIds { get; set; } = [];
 
@@ -16,7 +17,7 @@ public class Product
     public List<Review> Reviews { get; } = new();
     public List<Tag> Tags { get; } = new();
     public List<Order> Orders { get; } = new();
-
+    
 
     public Product(){}
     public Product(ProductDto productDto)

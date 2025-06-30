@@ -13,17 +13,43 @@ namespace SaGaMarket.Server.Controllers
         private readonly GetProductUseCase _getProductUseCase;
         private readonly UpdateProductUseCase _updateProductUseCase;
         private readonly DeleteProductUseCase _deleteProductUseCase;
+        private readonly GetProductWithPagination _getProductWithPagination;
 
         public ProductController(
             CreateProductUseCase createProductUseCase,
             GetProductUseCase getProductUseCase,
             UpdateProductUseCase updateProductUseCase,
-            DeleteProductUseCase deleteProductUseCase)
+            GetProductWithPagination getProductWithPagination,
+        DeleteProductUseCase deleteProductUseCase)
         {
             _createProductUseCase = createProductUseCase;
             _getProductUseCase = getProductUseCase;
+            _getProductWithPagination = getProductWithPagination;
             _updateProductUseCase = updateProductUseCase;
             _deleteProductUseCase = deleteProductUseCase;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetProducts(
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var (products, totalCount) = await _getProductWithPagination.GetProductsWithPaginationAsync(
+                    page,
+                    pageSize);
+
+                Response.Headers.Add("X-Total-Count", totalCount.ToString());
+                Response.Headers.Add("X-Page", page.ToString());
+                Response.Headers.Add("X-Page-Size", pageSize.ToString());
+
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         [HttpPost]
