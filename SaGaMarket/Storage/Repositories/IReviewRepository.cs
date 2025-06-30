@@ -8,4 +8,5 @@ public interface IReviewRepository
     Task<bool> Update(Review review);
     Task Delete(Guid reviewId);
     Task<Review?> Get(Guid reviewId);
+    Task<bool> HasUserReviewedProduct(Guid userId, Guid productId);
 }

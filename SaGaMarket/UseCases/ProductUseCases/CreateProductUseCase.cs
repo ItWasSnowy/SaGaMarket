@@ -1,35 +1,47 @@
-﻿using System;
-using System.Threading.Tasks;
-using SaGaMarket.Core.Entities;
+﻿using SaGaMarket.Core.Entities;
 using SaGaMarket.Core.Storage.Repositories;
 
-namespace SaGaMarket.Core.UseCases.ProductUseCases
+public class CreateProductUseCase
 {
-    public class CreateProductUseCase
+    private readonly IProductRepository _productRepository;
+    private readonly IUserRepository _userRepository;
+
+    public CreateProductUseCase(IProductRepository productRepository, IUserRepository userRepository)
     {
-        private readonly IProductRepository _productRepository;
+        _productRepository = productRepository;
+        _userRepository = userRepository;
+    }
 
-        public CreateProductUseCase(IProductRepository productRepository)
+    public async Task<Guid> Handle(CreateProductRequest request, Guid sellerId)
+    {
+        var user = await _userRepository.Get(sellerId);
+
+        if (user == null)
         {
-            _productRepository = productRepository;
+            throw new ArgumentException("User not found");
         }
 
-        public async Task<Guid> Handle(CreateProductRequest request, Guid sellerId)
+        if (user.Role == Role.customer)
         {
-            var product = new Product
-            {
-                SellerId = sellerId,
-                Category = request.Category,
-                AverageRating = 0,
-                
-            };
-            return await _productRepository.Create(product);
+            throw new UnauthorizedAccessException("Only sellers and admins can create products");
         }
 
-        public class CreateProductRequest
+        var product = new Product
         {
-            public string Category { get; set; } = string.Empty;
-            
-        }
+            SellerId = sellerId,
+            Category = request.Category,
+            AverageRating = 0,
+        };
+
+        return await _productRepository.Create(product);
+    }
+    public class CreateProductRequest
+    {
+        public string Category { get; set; } = string.Empty;
+
     }
 }
+
+
+    
+

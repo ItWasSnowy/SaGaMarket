@@ -9,4 +9,5 @@ public interface IOrderRepository
     Task Delete(Guid orderId);
     Task<Order?> Get(Guid orderId);
     Task<Guid> AddOrderItem(OrderItem orderItem);
+    Task UpdateOrderTotal(Guid orderId, decimal amountToAdd);
 }

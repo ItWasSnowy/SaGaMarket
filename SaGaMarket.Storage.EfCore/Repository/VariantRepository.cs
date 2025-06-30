@@ -37,9 +37,18 @@ namespace SaGaMarket.Storage.EfCore.Repository
 
         public async Task<Variant?> Get(Guid variantId)
         {
-            return await _context.Variants
-                .Include(v => v.PriceHistory) // Загрузка истории цен
+            var variant = await _context.Variants
+                .Include(v => v.PriceHistory)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(v => v.VariantId == variantId);
+
+            if (variant != null && variant.PriceHistory != null)
+            {
+                variant.PriceHistory.Price = variant.Price;
+                variant.PriceHistory.VariantId = variant.VariantId;
+            }
+
+            return variant;
         }
 
         public async Task<List<Variant>?> GetByProduct(Guid productId)

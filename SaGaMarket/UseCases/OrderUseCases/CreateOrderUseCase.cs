@@ -30,8 +30,8 @@ public class CreateOrderUseCase
 
             var (orderItems, totalPrice) = await ProcessOrderItems(request.Items);
 
-            var order = new Order { CustomerId = customerId, TotalPrice = totalPrice, DiscountAmount = request.DiscountAmount,
-                FinalPrice = totalPrice - request.DiscountAmount, ShippingAddress = request.ShippingAddress.Trim(),
+            var order = new Order { CustomerId = customerId, TotalPrice = totalPrice, /*DiscountAmount = request.DiscountAmount,*/
+                FinalPrice = totalPrice /*- request.DiscountAmount*/, ShippingAddress = request.ShippingAddress.Trim(),
                 BillingAddress = (request.BillingAddress ?? request.ShippingAddress).Trim(),
                 PaymentMethod = request.PaymentMethod.Trim(), OrderStatus = OrderStatus.Processing.ToString(),
                 Notes = request.Notes?.Trim(), OrderItems = orderItems };
@@ -50,8 +50,8 @@ public class CreateOrderUseCase
         if (request.Items == null || !request.Items.Any())
             throw new ArgumentException("Order must contain at least one item");
 
-        if (request.DiscountAmount < 0)
-            throw new ArgumentException("Discount cannot be negative");
+        //if (request.DiscountAmount < 0)
+        //    throw new ArgumentException("Discount cannot be negative");
 
         if (string.IsNullOrWhiteSpace(request.ShippingAddress))
             throw new ArgumentException("Shipping address is required");
@@ -60,6 +60,7 @@ public class CreateOrderUseCase
     private async Task<(List<OrderItem> Items, decimal TotalPrice)> ProcessOrderItems(List<OrderItemDto> items)
     {
         var orderItems = new List<OrderItem>();
+        
         decimal totalPrice = 0;
 
         foreach (var item in items)
@@ -73,7 +74,7 @@ public class CreateOrderUseCase
             if (item.Quantity <= 0)
                 throw new ArgumentException($"Invalid quantity for product: {item.ProductId}");
 
-            if (item.UnitPrice <= 0)
+            if (variant.Price <= 0)
                 throw new ArgumentException($"Invalid price for product: {item.ProductId}");
 
             var orderItem = new OrderItem
@@ -81,13 +82,13 @@ public class CreateOrderUseCase
                 ProductId = item.ProductId,
                 VariantId = item.VariantId,
                 Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice,
+                UnitPrice = variant.Price,
                 Product = product,
                 Variant = variant
             };
 
             orderItems.Add(orderItem);
-            totalPrice += item.Quantity * item.UnitPrice;
+            totalPrice += item.Quantity * variant.Price;
         }
 
         return (orderItems, totalPrice);
@@ -99,8 +100,8 @@ public class CreateOrderUseCase
         [MinLength(1, ErrorMessage = "At least one order item is required")]
         public List<OrderItemDto> Items { get; set; } = new();
 
-        [Range(0, double.MaxValue, ErrorMessage = "Discount cannot be negative")]
-        public decimal DiscountAmount { get; set; } = 0;
+        //[Range(0, double.MaxValue, ErrorMessage = "Discount cannot be negative")]
+        //public decimal DiscountAmount { get; set; } = 0;
 
         [Required]
         [StringLength(200, MinimumLength = 5)]
@@ -127,7 +128,7 @@ public class CreateOrderUseCase
         [Range(1, int.MaxValue)]
         public int Quantity { get; set; }
 
-        [Range(0.01, double.MaxValue)]
-        public decimal UnitPrice { get; set; }
+        //[Range(0.01, double.MaxValue)]
+        //public decimal UnitPrice { get; set; }
     }
 }

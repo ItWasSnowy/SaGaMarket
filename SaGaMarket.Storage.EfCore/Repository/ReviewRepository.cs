@@ -74,6 +74,13 @@ namespace SaGaMarket.Storage.EfCore.Repository
             {
                 throw new Exception("An error occurred while updating the review.", ex);
             }
+
         }
+        public async Task<bool> HasUserReviewedProduct(Guid userId, Guid productId)
+        {
+            return await _context.Reviews
+                .AnyAsync(r => r.AuthorId == userId && r.ProductId == productId);
+        }
+
     }
 }

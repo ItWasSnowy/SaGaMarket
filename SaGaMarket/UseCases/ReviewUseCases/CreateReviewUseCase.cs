@@ -16,13 +16,22 @@ namespace SaGaMarket.Core.UseCases.ReviewUseCases
 
         public async Task<Guid> Handle(CreateReviewRequest request, Guid authorId)
         {
+            // Проверяем, есть ли уже отзыв от этого пользователя на этот продукт
+            bool hasExistingReview = await _reviewRepository.HasUserReviewedProduct(authorId, request.ProductId);
+
+            if (hasExistingReview)
+            {
+                throw new InvalidOperationException("Вы уже оставили отзыв на этот продукт");
+            }
+
             var review = new Review
             {
                 ProductId = request.ProductId,
                 UserRating = request.UserRating,
                 AuthorId = authorId,
-                // Другие свойства
+                CreatedAt = DateTime.UtcNow
             };
+
             return await _reviewRepository.Create(review);
         }
 

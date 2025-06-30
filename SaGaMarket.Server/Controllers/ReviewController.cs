@@ -34,8 +34,16 @@ namespace SaGaMarket.Server.Controllers
                 return BadRequest("Invalid review data.");
             }
 
-            var reviewId = await _createReviewUseCase.Handle(request, authorId);
-            return CreatedAtAction(nameof(Get), new { id = reviewId }, null);
+            try
+            {
+                var reviewId = await _createReviewUseCase.Handle(request, authorId);
+                return CreatedAtAction(nameof(Get), new { id = reviewId }, null);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message); // 409 Conflict - пользователь уже оставил отзыв
+            }
+            
         }
 
         [HttpGet("{id}")]

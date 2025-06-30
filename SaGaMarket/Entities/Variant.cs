@@ -1,4 +1,6 @@
-﻿namespace SaGaMarket.Core.Entities;
+﻿using System.Text.Json.Serialization;
+
+namespace SaGaMarket.Core.Entities;
 
 public class Variant
 {
@@ -8,15 +10,15 @@ public class Variant
     public string Description { get; set; } = string.Empty;
     public decimal Price { get; set; }
 
-    // Навигационные свойства
-    public Product Product { get; set; } = null!; 
+    [JsonIgnore]
+    public Product Product { get; set; } = null!;
     public PriceGraph PriceHistory { get; set; } = new();
 }
 public class PriceGraph
 {
     public decimal Price { get; set; }
     public DateTime LastPriceChange { get; set; } = DateTime.UtcNow;
-
     public Guid VariantId { get; set; }
+    [JsonIgnore]
     public Variant Variant { get; set; } = null!;
 }

@@ -107,4 +107,17 @@ public class OrderRepository : IOrderRepository
         await _context.SaveChangesAsync();
         return orderItem.OrderItemId;
     }
+
+    public async Task UpdateOrderTotal(Guid orderId, decimal amountToAdd)
+    {
+        var order = await _context.Orders.FindAsync(orderId);
+        if (order != null)
+        {
+            order.FinalPrice += amountToAdd;
+            order.TotalPrice += amountToAdd;
+
+            await _context.SaveChangesAsync();
+        }
+    }
+
 }
