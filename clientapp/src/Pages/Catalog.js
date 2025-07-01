@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './Catalog.css';
 
-// Отключение проверки SSL только для разработки (добавьте в начале файла)
+// Отключение проверки SSL только для разработки
 if (process.env.NODE_ENV === 'development') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
@@ -19,14 +19,33 @@ function Catalog() {
     }
   });
 
+  // Используем ref для хранения AbortController
+  const abortControllerRef = useRef(null);
+
   const fetchProducts = async (page = 1, pageSize = 10) => {
+    // Отменяем предыдущий запрос, если он существует
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Создаем новый AbortController
+    abortControllerRef.current = new AbortController();
+
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       
       const response = await axios.get('https://localhost:7182/api/Product', {
-        params: { page, pageSize }
+        params: { page, pageSize },
+        signal: abortControllerRef.current.signal
       });
-      
+
+      // Получаем общее количество товаров
+      const totalCount = response.headers['x-total-count'] 
+        ? parseInt(response.headers['x-total-count'])
+        : (response.data.length >= pageSize 
+            ? (page * pageSize) + 1 
+            : ((page - 1) * pageSize) + response.data.length);
+
       setState({
         products: response.data,
         loading: false,
@@ -34,61 +53,57 @@ function Catalog() {
         pagination: {
           page,
           pageSize,
-          totalCount: parseInt(response.headers['x-total-count']) || 0
+          totalCount: Math.max(totalCount, response.data.length)
         }
       });
-      
+
     } catch (error) {
-      let errorMessage = 'Ошибка при загрузке данных';
-      
-      if (error.response) {
-        // Сервер ответил с кодом ошибки
-        errorMessage = `Ошибка сервера: ${error.response.status}`;
-      } else if (error.request) {
-        // Запрос был сделан, но ответ не получен
-        errorMessage = 'Сервер не отвечает. Проверьте:';
-      } else {
-        // Другие ошибки
-        errorMessage = error.message;
+      if (axios.isCancel(error)) {
+        console.log('Запрос был отменен');
+        return;
       }
       
       setState(prev => ({
         ...prev,
         loading: false,
-        error: errorMessage
+        error: error.response?.data?.message || 
+              error.message || 
+              'Ошибка при загрузке данных'
       }));
     }
   };
 
   useEffect(() => {
     fetchProducts();
+
+    // Функция очистки - отменяем запрос при размонтировании
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
   const handleNextPage = () => {
-    const nextPage = state.pagination.page + 1;
-    if (nextPage <= Math.ceil(state.pagination.totalCount / state.pagination.pageSize)) {
-      fetchProducts(nextPage);
+    if (state.pagination.page < Math.ceil(state.pagination.totalCount / state.pagination.pageSize)) {
+      fetchProducts(state.pagination.page + 1);
     }
   };
 
   const handlePrevPage = () => {
-    const prevPage = state.pagination.page - 1;
-    if (prevPage >= 1) {
-      fetchProducts(prevPage);
+    if (state.pagination.page > 1) {
+      fetchProducts(state.pagination.page - 1);
     }
   };
+
+  // Рассчитываем общее количество страниц
+  const totalPages = Math.ceil(state.pagination.totalCount / state.pagination.pageSize);
 
   if (state.error) {
     return (
       <div className="error-container">
-        <h3>{state.error}</h3>
-        {state.error.includes('Проверьте') && (
-          <ul>
-            <li>• Сервер запущен на https://localhost:7182</li>
-            <li>• CORS настроен на сервере</li>
-            <li>• Сертификат разработки добавлен в доверенные</li>
-          </ul>
-        )}
+        <h3>Ошибка</h3>
+        <p>{state.error}</p>
         <button 
           onClick={() => fetchProducts(state.pagination.page)}
           className="retry-button"
@@ -107,50 +122,49 @@ function Catalog() {
     <div className="catalog">
       <h1>Каталог товаров</h1>
       
-      <div className="products-grid">
-        {state.products.map(product => (
-          <div key={product.productId} className="product-card">
-            <h3>{product.productName}</h3>
-            <p className="price">
-              {product.minPrice === product.maxPrice 
-                ? `${product.minPrice} ₽` 
-                : `от ${product.minPrice} до ${product.maxPrice} ₽`}
-            </p>
-            <p className="category">{product.productCategory}</p>
-            <p className="rating">
-              Рейтинг: {isNaN(product.averageRating) 
-                ? 'нет оценок' 
-                : product.averageRating.toFixed(1)}
-            </p>
+      {state.products.length === 0 ? (
+        <div className="empty">Товары не найдены</div>
+      ) : (
+        <>
+          <div className="products-grid">
+            {state.products.map(product => (
+              <div key={product.productId} className="product-card">
+                <h3>{product.productName}</h3>
+                <p className="price">
+                  {product.minPrice === product.maxPrice 
+                    ? `${product.minPrice} ₽` 
+                    : `от ${product.minPrice} до ${product.maxPrice} ₽`}
+                </p>
+                <p className="category">{product.productCategory}</p>
+                <p className="rating">
+                  Рейтинг: {isNaN(product.averageRating) 
+                    ? 'нет оценок' 
+                    : product.averageRating.toFixed(1)}
+                </p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {state.pagination.totalCount > 0 && (
-        <div className="pagination">
-          <button 
-            onClick={handlePrevPage}
-            disabled={state.pagination.page === 1 || state.loading}
-          >
-            Назад
-          </button>
-          
-          <span>
-            Страница {state.pagination.page} из{' '}
-            {Math.ceil(state.pagination.totalCount / state.pagination.pageSize)}
-          </span>
-          
-          <button 
-            onClick={handleNextPage}
-            disabled={
-              state.pagination.page >= 
-              Math.ceil(state.pagination.totalCount / state.pagination.pageSize) || 
-              state.loading
-            }
-          >
-            Вперед
-          </button>
-        </div>
+          <div className="pagination">
+            <button 
+              onClick={handlePrevPage}
+              disabled={state.pagination.page === 1 || state.loading}
+            >
+              Назад
+            </button>
+            
+            <span>
+              Страница {state.pagination.page} из {totalPages}
+            </span>
+            
+            <button 
+              onClick={handleNextPage}
+              disabled={state.pagination.page >= totalPages || state.loading}
+            >
+              Вперед
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

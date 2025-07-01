@@ -31,25 +31,19 @@ namespace SaGaMarket.Server.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetProducts(
-    [FromQuery] int page = 1,
-    [FromQuery] int pageSize = 10)
+     [FromQuery] int page = 1,
+     [FromQuery] int pageSize = 10)
         {
-            try
-            {
-                var (products, totalCount) = await _getProductWithPagination.GetProductsWithPaginationAsync(
-                    page,
-                    pageSize);
+            var (products, totalCount) = await _getProductWithPagination
+                .GetProductsWithPaginationAsync(page, pageSize);
 
-                Response.Headers.Add("X-Total-Count", totalCount.ToString());
-                Response.Headers.Add("X-Page", page.ToString());
-                Response.Headers.Add("X-Page-Size", pageSize.ToString());
+            // Важно: Добавляем заголовок с общим количеством
+            Response.Headers.Add("X-Total-Count", totalCount.ToString());
 
-                return Ok(products);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            // Логируем для проверки
+            Console.WriteLine($"Отправлено продуктов:, Всего: {totalCount}");
+
+            return Ok(products);
         }
 
         [HttpPost]

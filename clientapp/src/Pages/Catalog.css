@@ -91,3 +91,18 @@
   background-color: #b0bec5;
   cursor: not-allowed;
 }
+.error-message {
+  background: #ffebee;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+}
+.error-message button {
+  margin-top: 10px;
+  padding: 8px 15px;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
