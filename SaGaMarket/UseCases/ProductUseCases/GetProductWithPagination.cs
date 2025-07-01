@@ -16,22 +16,30 @@ public class GetProductWithPagination
     }
 
     public async Task<(IEnumerable<ProductRequest> Products, int TotalCount)> GetProductsWithPaginationAsync(
-        int page,
-        int pageSize)
+    int page,
+    int pageSize)
     {
+       
+        // Добавляем валидацию параметров
+        if (page < 1) throw new ArgumentException("Номер страницы не может быть меньше 1");
+        if (pageSize < 1) throw new ArgumentException("Размер страницы не может быть меньше 1");
+
         var (products, totalCount) = await _productRepository.GetProductsWithPaginationAsync(page, pageSize);
+
+        // Логируем для отладки
+        Console.WriteLine($"Получено {products.Count()} из {totalCount} товаров");
 
         var productDtos = products.Select(p => new ProductRequest
         {
             ProductId = p.ProductId,
-            ProductName = p.Name,  // Используем p.Name вместо p.ProductName
+            ProductName = p.Name,
             ProductCategory = p.Category,
             SellerId = p.SellerId,
             AverageRating = p.AverageRating,
-            ReviewIds = p.ReviewIds,
-            MinPrice = p.Variants.Any() ? (int)p.Variants.Min(v => v.Price) : 0,
-            MaxPrice = p.Variants.Any() ? (int)p.Variants.Max(v => v.Price) : 0,
-            VariantCount = p.Variants.Count
+            ReviewIds = p.ReviewIds ?? new List<Guid>(),
+            MinPrice = p.Variants?.Any() == true ? (int)p.Variants.Min(v => v.Price) : 0,
+            MaxPrice = p.Variants?.Any() == true ? (int)p.Variants.Max(v => v.Price) : 0,
+            VariantCount = p.Variants?.Count ?? 0
         }).ToList();
 
         return (productDtos, totalCount);

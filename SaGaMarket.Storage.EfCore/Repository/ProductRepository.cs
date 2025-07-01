@@ -28,16 +28,17 @@ namespace SaGaMarket.Storage.EfCore.Repository
     int page,
     int pageSize)
         {
-            var query = _context.Products
+            // Основной запрос БЕЗ пагинации для подсчета общего количества
+            var countQuery = _context.Products.AsNoTracking();
+            var totalCount = await countQuery.CountAsync();
+
+            // Запрос с пагинацией
+            var products = await _context.Products
                 .Include(p => p.Variants)
-                .AsNoTracking();
-
-            var totalCount = await query.CountAsync();
-
-            var products = await query
                 .OrderBy(p => p.Name)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .AsNoTracking()
                 .ToListAsync();
 
             return (products, totalCount);

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using SaGaMarket.Core.UseCases.ProductUseCases;
 using System;
 using System.Threading.Tasks;
@@ -31,19 +32,31 @@ namespace SaGaMarket.Server.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetProducts(
-     [FromQuery] int page = 1,
-     [FromQuery] int pageSize = 10)
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
         {
-            var (products, totalCount) = await _getProductWithPagination
-                .GetProductsWithPaginationAsync(page, pageSize);
+            try
+            {
+                var (products, totalCount) = await _getProductWithPagination
+                    .GetProductsWithPaginationAsync(page, pageSize);
 
-            // Важно: Добавляем заголовок с общим количеством
-            Response.Headers.Add("X-Total-Count", totalCount.ToString());
+                // Обязательно добавляем заголовок
+                HttpContext.Response.Headers.Append("X-Total-Count", totalCount.ToString());
 
-            // Логируем для проверки
-            Console.WriteLine($"Отправлено продуктов:, Всего: {totalCount}");
+                // Для отладки
+                
 
-            return Ok(products);
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+
+                return StatusCode(500, new
+                {
+                    Message = "Ошибка сервера",
+                    Detailed = ex.Message
+                });
+            }
         }
 
         [HttpPost]

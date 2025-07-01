@@ -92,7 +92,8 @@ namespace SaGaMarket.Server
                     policy.WithOrigins("http://localhost:3000")
                           .AllowAnyMethod()
                           .AllowAnyHeader()
-                          .AllowCredentials();
+                          .AllowCredentials()
+                           .WithExposedHeaders("X-Total-Count"); // Это ключевая настройка!
                 });
             });
 
