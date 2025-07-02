@@ -21,7 +21,6 @@ namespace SaGaMarket.Core.UseCases.VariantUseCases
 
         public async Task<IEnumerable<VariantDto>> Handle(Guid productId)
         {
-            // Проверка существования продукта
             var product = await _productRepository.Get(productId);
             if (product == null)
             {

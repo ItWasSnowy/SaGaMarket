@@ -67,7 +67,7 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _updateOrderUseCase.Handle(id, request, customerId);
-                return NoContent(); // Успешное обновление
+                return NoContent();
             }
             catch (ArgumentException)
             {
@@ -75,7 +75,7 @@ namespace SaGaMarket.Server.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid(); // Доступ запрещен
+                return Forbid();
             }
             catch (Exception)
             {
@@ -89,7 +89,7 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _deleteOrderUseCase.Handle(id, customerId);
-                return NoContent(); // Успешное удаление
+                return NoContent();
             }
             catch (InvalidOperationException ex)
             {

@@ -26,16 +26,14 @@ public class RemoveFromFavoritesUseCase
             if (user == null)
                 throw new ArgumentException("User  not found");
 
-            // Проверяем, что товар в избранном
             if (!user.ProductFromFavoriteIds.Contains(request.ProductId))
             {
                 _logger.LogWarning("Product {ProductId} not found in favorites for user {User Id}", request.ProductId, userId);
-                return false; // Товар не найден в избранном
+                return false;
             }
 
             user.ProductFromFavoriteIds.Remove(request.ProductId);
 
-            // Сохраняем изменения
             return await _cartRepository.SaveChangesAsync();
         }
         catch (Exception ex)

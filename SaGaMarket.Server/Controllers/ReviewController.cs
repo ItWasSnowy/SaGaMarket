@@ -64,7 +64,7 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _updateReviewUseCase.Handle(id, newRating, authorId);
-                return NoContent(); // Успешное обновление
+                return NoContent();
             }
             catch (ArgumentException)
             {
@@ -72,7 +72,7 @@ namespace SaGaMarket.Server.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid(); // Доступ запрещен
+                return Forbid();
             }
             catch (Exception)
             {
@@ -86,7 +86,7 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _deleteReviewUseCase.Handle(id, authorId);
-                return NoContent(); // Успешное удаление
+                return NoContent();
             }
             catch (InvalidOperationException ex)
             {

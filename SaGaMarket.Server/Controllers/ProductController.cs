@@ -40,11 +40,7 @@ namespace SaGaMarket.Server.Controllers
                 var (products, totalCount) = await _getProductWithPagination
                     .GetProductsWithPaginationAsync(page, pageSize);
 
-                // Обязательно добавляем заголовок
                 HttpContext.Response.Headers.Append("X-Total-Count", totalCount.ToString());
-
-                // Для отладки
-                
 
                 return Ok(products);
             }
@@ -89,7 +85,7 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _updateProductUseCase.Handle(id, request, sellerId);
-                return NoContent(); // Успешное обновление
+                return NoContent();
             }
             catch (ArgumentException)
             {
@@ -97,7 +93,7 @@ namespace SaGaMarket.Server.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid(); // Доступ запрещен
+                return Forbid();
             }
             catch (Exception)
             {
@@ -111,7 +107,7 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _deleteProductUseCase.Handle(id, sellerId);
-                return NoContent(); // Успешное удаление
+                return NoContent();
             }
             catch (InvalidOperationException ex)
             {

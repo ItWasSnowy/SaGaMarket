@@ -22,7 +22,6 @@ namespace SaGaMarket.Core.UseCases.UserUseCases
             if (u is null) throw new InvalidOperationException("User not found");
             if (u.UserId != currentUserId) throw new InvalidOperationException("You not this person");
             await _userRepository.Delete(userId);
-            //return await _userRepository.Create(userDto);
         }
     }
 }

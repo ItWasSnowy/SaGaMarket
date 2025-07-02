@@ -19,14 +19,11 @@ public class GetProductWithPagination
     int page,
     int pageSize)
     {
-       
-        // Добавляем валидацию параметров
         if (page < 1) throw new ArgumentException("Номер страницы не может быть меньше 1");
         if (pageSize < 1) throw new ArgumentException("Размер страницы не может быть меньше 1");
 
         var (products, totalCount) = await _productRepository.GetProductsWithPaginationAsync(page, pageSize);
 
-        // Логируем для отладки
         Console.WriteLine($"Получено {products.Count()} из {totalCount} товаров");
 
         var productDtos = products.Select(p => new ProductRequest

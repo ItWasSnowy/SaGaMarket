@@ -32,7 +32,6 @@ namespace SaGaMarket.Core.UseCases.OrderUseCases
         public class UpdateOrderRequest
         {
             public decimal TotalPrice { get; set; }
-            // Другие свойства
         }
     }
 }

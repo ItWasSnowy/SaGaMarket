@@ -28,11 +28,9 @@ namespace SaGaMarket.Storage.EfCore.Repository
     int page,
     int pageSize)
         {
-            // Основной запрос БЕЗ пагинации для подсчета общего количества
             var countQuery = _context.Products.AsNoTracking();
             var totalCount = await countQuery.CountAsync();
 
-            // Запрос с пагинацией
             var products = await _context.Products
                 .Include(p => p.Variants)
                 .OrderBy(p => p.Name)
@@ -102,7 +100,6 @@ namespace SaGaMarket.Storage.EfCore.Repository
 
             existingProduct.Category = product.Category;
             existingProduct.AverageRating = product.AverageRating;
-            // Обновите другие свойства по мере необходимости
 
             try
             {

@@ -23,7 +23,6 @@ namespace SaGaMarket.Storage.EfCore.Repository
             if (tag == null)
                 throw new ArgumentNullException(nameof(tag));
 
-            // Нормализуем регистр TagId
             tag.TagId = tag.TagId.ToLowerInvariant();
 
             _context.Tags.Add(tag);
@@ -36,14 +35,12 @@ namespace SaGaMarket.Storage.EfCore.Repository
             if (tag == null)
                 throw new ArgumentNullException(nameof(tag));
 
-            // Нормализуем регистр TagId
             tag.TagId = tag.TagId.ToLowerInvariant();
 
             var existingTag = await _context.Tags.FindAsync(tag.TagId);
             if (existingTag == null)
                 return false;
 
-            // Обновляем свойства (если они появятся в будущем)
             _context.Entry(existingTag).CurrentValues.SetValues(tag);
 
             try

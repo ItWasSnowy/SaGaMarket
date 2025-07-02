@@ -68,8 +68,6 @@ public class UserRepository : IUserRepository, IUserRoleService
         if (user?.Role != Role.seller)
             throw new InvalidOperationException("User is not a seller");
 
-        // Логика активации функционала покупателя
-        // Например, установка флага или добавление в специальную таблицу
     }
 
     public async Task<Role?> GetUserRoleAsync(Guid userId)

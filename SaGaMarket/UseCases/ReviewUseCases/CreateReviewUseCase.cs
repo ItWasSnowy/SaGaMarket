@@ -16,7 +16,6 @@ namespace SaGaMarket.Core.UseCases.ReviewUseCases
 
         public async Task<Guid> Handle(CreateReviewRequest request, Guid authorId)
         {
-            // Проверяем, есть ли уже отзыв от этого пользователя на этот продукт
             bool hasExistingReview = await _reviewRepository.HasUserReviewedProduct(authorId, request.ProductId);
 
             if (hasExistingReview)
@@ -39,7 +38,6 @@ namespace SaGaMarket.Core.UseCases.ReviewUseCases
         {
             public Guid ProductId { get; set; }
             public double UserRating { get; set; }
-            // Другие свойства
         }
     }
 }

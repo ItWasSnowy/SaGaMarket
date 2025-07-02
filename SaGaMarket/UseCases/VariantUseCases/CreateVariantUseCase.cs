@@ -18,14 +18,12 @@ namespace SaGaMarket.Core.UseCases.VariantUseCases
 
         public async Task<Guid> Handle(CreateVariantRequest request)
         {
-            // 1. Проверка существования продукта
             var product = await _productRepository.Get(request.ProductId);
             if (product == null)
             {
                 throw new InvalidOperationException("Product not found");
             }
 
-            // 2. Проверка уникальности имени варианта для этого продукта
             bool nameExists = await _variantRepository.VariantNameExistsForProduct(
                 request.ProductId,
                 request.Name);
@@ -36,7 +34,6 @@ namespace SaGaMarket.Core.UseCases.VariantUseCases
                     $"Variant with name '{request.Name}' already exists for this product");
             }
 
-            // 3. Создание нового варианта
             var variant = new Variant
             {
                 ProductId = request.ProductId,
@@ -53,7 +50,6 @@ namespace SaGaMarket.Core.UseCases.VariantUseCases
 
         public class CreateVariantRequest
         {
-            //public Guid VariantId { get; set; }
             public Guid ProductId { get; set; }
             public string Name { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;

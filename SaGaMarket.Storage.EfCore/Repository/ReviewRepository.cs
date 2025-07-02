@@ -38,7 +38,7 @@ namespace SaGaMarket.Storage.EfCore.Repository
         public async Task<Review?> Get(Guid reviewId)
         {
             return await _context.Reviews
-                .Include(r => r.Comments) // Загрузка связанных комментариев
+                .Include(r => r.Comments)
                 .FirstOrDefaultAsync(r => r.ReviewId == reviewId);
         }
 
@@ -63,7 +63,6 @@ namespace SaGaMarket.Storage.EfCore.Repository
             }
 
             existingReview.UserRating = review.UserRating;
-            // Обновите другие свойства по мере необходимости
 
             try
             {

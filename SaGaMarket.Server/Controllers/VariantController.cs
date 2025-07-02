@@ -95,7 +95,7 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _updateVariantUseCase.Handle(id, request);
-                return NoContent(); // Успешное обновление
+                return NoContent();
             }
             catch (ArgumentException)
             {
@@ -118,7 +118,7 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _updateCountVariantUseCase.Handle(id, request);
-                return NoContent(); // Успешное обновление
+                return NoContent();
             }
             catch (ArgumentException)
             {
@@ -136,7 +136,7 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _deleteVariantUseCase.Handle(id);
-                return NoContent(); // Успешное удаление
+                return NoContent();
             }
             catch (InvalidOperationException ex)
             {

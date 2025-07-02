@@ -24,7 +24,6 @@ namespace SaGaMarket.Core.UseCases.ProductUseCases
                 throw new UnauthorizedAccessException("You can only update your own products");
 
             existingProduct.Category = request.Category;
-            // Обновите другие свойства
 
             if (!await _productRepository.Update(existingProduct))
                 throw new Exception("Failed to update product");
@@ -33,7 +32,6 @@ namespace SaGaMarket.Core.UseCases.ProductUseCases
         public class UpdateProductRequest
         {
             public string Category { get; set; } = string.Empty;
-            // Другие свойства
         }
     }
 }

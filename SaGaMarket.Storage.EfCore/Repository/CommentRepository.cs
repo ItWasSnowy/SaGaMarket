@@ -55,13 +55,11 @@ namespace SaGaMarket.Storage.EfCore.Repository
             {
                 throw new ArgumentNullException(nameof(comment), "Comment cannot be null.");
             }
-            // Проверяем, существует ли комментарий в базе данных
             var existingComment = await _context.Comments.FindAsync(comment.CommentId);
             if (existingComment == null)
             {
                 return false;
             }
-            // Обновляем свойства существующего комментария
             existingComment.CommentText = comment.CommentText;
             existingComment.TimeLastUpdate = comment.TimeLastUpdate;
 
@@ -73,14 +71,10 @@ namespace SaGaMarket.Storage.EfCore.Repository
             try
             {
                 await _context.SaveChangesAsync();
-                return true; // Обновление успешно
+                return true;
             }
             catch (DbUpdateException ex)
             {
-                // Логирование ошибки или обработка исключения
-                // Например, можно записать в журнал или выбросить новое исключение
-                // ArgumentException
-                // InvalidOperationException
                 throw new Exception("An error occurred while updating the comment.", ex);
             }
         }

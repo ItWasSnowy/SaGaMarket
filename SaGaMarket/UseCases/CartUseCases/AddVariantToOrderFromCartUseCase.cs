@@ -18,7 +18,6 @@ namespace SaGaMarket.Core.UseCases.OrderUseCases
 
         public async Task<Guid> Handle(AddVariantToOrderRequest request, Guid orderId)
         {
-            // Получите вариант из репозитория
             var variant = await _variantRepository.Get(request.VariantId);
             if (variant == null)
             {
@@ -39,7 +38,7 @@ namespace SaGaMarket.Core.UseCases.OrderUseCases
                 ProductId = request.ProductId,
                 VariantId = request.VariantId,
                 Quantity = request.Quantity,
-                UnitPrice = unitPrice // Устанавливаем цену за штуку из продукта
+                UnitPrice = unitPrice
             };
 
 

@@ -14,8 +14,6 @@ namespace SaGaMarket.Core.UseCases
         }
         public async Task<List<CommentDto>?> Handle(Guid reviewId)
         {
-
-            // Получаем список комментариев от автора
             var comments = await _commentRepository.GetByReview(reviewId);
             if (comments == null || !comments.Any()) return null;
 

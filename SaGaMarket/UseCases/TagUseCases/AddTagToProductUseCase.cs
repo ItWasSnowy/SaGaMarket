@@ -24,14 +24,13 @@ namespace SaGaMarket.Core.UseCases.Tags
                 throw new ArgumentException("Tag ID cannot be empty");
 
             var tagId = tagDto.TagId.ToLowerInvariant().Trim();
-            Tag tagTr = await _tagRepository.Get(tagId); // Retrieve the existing tag
+            Tag tagTr = await _tagRepository.Get(tagId);
 
             if (tagTr == null)
             {
-                tagTr = new Tag(tagDto); // Create a new tag if it doesn't exist
+                tagTr = new Tag(tagDto);
                 await _tagRepository.Create(tagTr);
             }
-            // No need to create a new Tag instance if it already exists
 
             var tourRoute = await _productRepository.Get(tourRouteId);
             if (tourRoute == null)

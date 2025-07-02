@@ -64,12 +64,12 @@ namespace SaGaMarket.Server.Controllers
                 return BadRequest("Invalid user data.");
             }
 
-            userDto.UserId = id; // Убедитесь, что ID пользователя совпадает с переданным в URL
+            userDto.UserId = id;
 
             try
             {
                 await _updateUserUseCase.Handle(userDto);
-                return NoContent(); // Успешное обновление
+                return NoContent();
             }
             catch (Exception)
             {
@@ -83,7 +83,7 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _deleteUserUseCase.Handle(id, currentUserId);
-                return NoContent(); // Успешное удаление
+                return NoContent();
             }
             catch (InvalidOperationException ex)
             {

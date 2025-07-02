@@ -74,10 +74,8 @@ public class FavoritesController : ControllerBase
     {
         try
         {
-            // 1. Получаем информацию о роли пользователя
             var userRoleInfo = await _getUserRoleUseCase.Execute(userId);
 
-            // 2. Проверяем права на удаление из избранного
             if (!userRoleInfo.CanPurchase)
             {
                 return userRoleInfo.Role == Role.seller
@@ -85,7 +83,6 @@ public class FavoritesController : ControllerBase
                     : StatusCode(403, "Только клиенты могут удалять товары из избранного");
             }
 
-            // 3. Выполняем удаление из избранного
             var result = await _removeFromFavoritesUseCase.Handle(request, userId);
 
             if (!result)

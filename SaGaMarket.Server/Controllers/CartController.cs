@@ -74,10 +74,8 @@ public class CartController : ControllerBase
     {
         try
         {
-            // 1. Получаем информацию о роли пользователя
             var userRoleInfo = await _getUserRoleUseCase.Execute(userId);
 
-            // 2. Проверяем права на удаление из корзины
             if (!userRoleInfo.CanPurchase)
             {
                 return userRoleInfo.Role == Role.seller
@@ -85,7 +83,6 @@ public class CartController : ControllerBase
                     : StatusCode(403, "Только клиенты могут удалять товары из корзины");
             }
 
-            // 3. Выполняем удаление из корзины
             var result = await _removeFromCartUseCase.Handle(request, userId);
 
             if (!result)

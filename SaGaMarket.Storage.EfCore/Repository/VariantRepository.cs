@@ -82,7 +82,6 @@ namespace SaGaMarket.Storage.EfCore.Repository
             existingVariant.Name = variant.Name;
             existingVariant.Description = variant.Description;
             existingVariant.Price = variant.Price;
-            // Обновите другие свойства по мере необходимости
 
             try
             {
