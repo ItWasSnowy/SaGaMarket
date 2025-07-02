@@ -13,10 +13,9 @@ function Catalog() {
       totalCount: 0
     }
   });
-
+  const [inputPage, setInputPage] = useState(''); // Для ввода номера страницы
   const abortControllerRef = useRef(null);
 
-  // Функция для отображения рейтинга звездами
   const renderRating = (rating) => {
     const normalizedRating = rating || 0;
     const fullStars = Math.floor(normalizedRating);
@@ -69,6 +68,7 @@ function Catalog() {
           totalCount
         }
       });
+      setInputPage(''); // Сброс поля ввода после успешного перехода
 
     } catch (error) {
       if (axios.isCancel(error)) return;
@@ -99,6 +99,32 @@ function Catalog() {
     }
   };
 
+  const handlePageInputChange = (e) => {
+    setInputPage(e.target.value);
+  };
+
+  const handlePageJump = () => {
+  const pageNum = parseInt(inputPage);
+  const totalPages = Math.ceil(state.pagination.totalCount / state.pagination.pageSize);
+  
+  if (!isNaN(pageNum)) { 
+    if (pageNum >= 1 && pageNum <= totalPages) {
+      fetchProducts(pageNum);
+    } else {
+      setState(prev => ({
+        ...prev,
+        error: `Введите номер страницы от 1 до ${totalPages}`
+      }));
+    }
+  }
+};
+
+  const handlePageInputKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handlePageJump();
+    }
+  };
+
   if (state.error) {
     return (
       <div className="error-container">
@@ -117,6 +143,8 @@ function Catalog() {
   if (state.loading && state.products.length === 0) {
     return <div className="loading">Загрузка товаров...</div>;
   }
+
+  const totalPages = Math.ceil(state.pagination.totalCount / state.pagination.pageSize);
 
   return (
     <div className="catalog">
@@ -142,29 +170,46 @@ function Catalog() {
       </div>
 
       {state.pagination.totalCount > 0 && (
-        <div className="pagination">
-          <button 
-            onClick={handlePrevPage}
-            disabled={state.pagination.page === 1 || state.loading}
-          >
-            Назад
-          </button>
+        <div className="pagination-container">
+          <div className="pagination">
+            <button 
+              onClick={handlePrevPage}
+              disabled={state.pagination.page === 1 || state.loading}
+            >
+              Назад
+            </button>
+            
+            <span className="page-info">
+              Страница {state.pagination.page} из {totalPages}
+            </span>
+            
+            <button 
+              onClick={handleNextPage}
+              disabled={state.pagination.page >= totalPages || state.loading}
+            >
+              Вперед
+            </button>
+          </div>
           
-          <span>
-            Страница {state.pagination.page} из{' '}
-            {Math.ceil(state.pagination.totalCount / state.pagination.pageSize)}
-          </span>
-          
-          <button 
-            onClick={handleNextPage}
-            disabled={
-              state.pagination.page >= 
-              Math.ceil(state.pagination.totalCount / state.pagination.pageSize) || 
-              state.loading
-            }
-          >
-            Вперед
-          </button>
+          <div className="page-jump">
+            <input
+              type="number"
+              min="1"
+              max={totalPages}
+              value={inputPage}
+              onChange={handlePageInputChange}
+              onKeyPress={handlePageInputKeyPress}
+              placeholder="№ страницы"
+              className="page-input"
+            />
+            <button 
+              onClick={handlePageJump}
+              disabled={state.loading}
+              className="jump-button"
+            >
+              Перейти
+            </button>
+          </div>
         </div>
       )}
     </div>

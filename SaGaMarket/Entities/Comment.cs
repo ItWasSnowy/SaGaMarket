@@ -19,8 +19,6 @@ public class Comment
 
     public DateTime TimeCreate { get; set; } = DateTime.UtcNow;
     public DateTime TimeLastUpdate { get; set; } = DateTime.UtcNow;
-
-    // Навигационные свойства
     public User Author { get; set; } = null!;
     public Review Review { get; set; } = null!;
     public Comment()

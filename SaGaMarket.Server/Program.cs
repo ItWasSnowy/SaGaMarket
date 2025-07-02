@@ -93,7 +93,7 @@ namespace SaGaMarket.Server
                           .AllowAnyMethod()
                           .AllowAnyHeader()
                           .AllowCredentials()
-                           .WithExposedHeaders("X-Total-Count"); // Это ключевая настройка!
+                           .WithExposedHeaders("X-Total-Count");
                 });
             });
 
@@ -113,7 +113,6 @@ namespace SaGaMarket.Server
             var app = builder.Build();
 
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();

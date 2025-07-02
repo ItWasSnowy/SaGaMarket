@@ -39,8 +39,6 @@ public class OrderItem
     public Guid VariantId { get; set; }
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
-
-    // Навигационные свойства
     public Order Order { get; set; } = null!;
     public Product Product { get; set; } = null!;
     public Variant Variant { get; set; } = null!;
