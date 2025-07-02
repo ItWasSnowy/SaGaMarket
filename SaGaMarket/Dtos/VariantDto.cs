@@ -14,6 +14,7 @@ namespace SaGaMarket.Core.Dtos
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
+        public int Count { get; set; }
         public PriceGraph PriceHistory { get; set; } = new();
     }
     public class PriceGraphDto

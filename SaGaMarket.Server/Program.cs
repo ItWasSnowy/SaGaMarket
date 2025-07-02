@@ -59,6 +59,8 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<DeleteVariantUseCase>();
             builder.Services.AddScoped<GetVariantUseCase>();
             builder.Services.AddScoped<UpdateVariantUseCase>();
+            builder.Services.AddScoped<UpdateCountVariantUseCase>();
+            builder.Services.AddScoped<GetAllVariantsOfOneProductUseCase>();
             builder.Services.AddScoped<IVariantRepository, VariantRepository>();
             //-------------------------------
             builder.Services.AddScoped<TagCreateUseCase>();
@@ -84,7 +86,7 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<RemoveFromFavoritesUseCase>();
             builder.Services.AddScoped<GetProductWithPagination>();
             builder.Services.AddScoped<ICartRepository, CartRepository>();
-
+            
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>

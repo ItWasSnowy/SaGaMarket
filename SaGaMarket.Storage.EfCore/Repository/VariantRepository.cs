@@ -51,6 +51,14 @@ namespace SaGaMarket.Storage.EfCore.Repository
             return variant;
         }
 
+        public async Task<IEnumerable<Variant>> GetAllForProduct(Guid productId)
+        {
+            return await _context.Variants
+                .Where(v => v.ProductId == productId)
+                .OrderBy(v => v.Price)
+                .AsNoTracking()
+                .ToListAsync();
+        }
         public async Task<List<Variant>?> GetByProduct(Guid productId)
         {
             return await _context.Variants
@@ -85,6 +93,14 @@ namespace SaGaMarket.Storage.EfCore.Repository
             {
                 throw new Exception("An error occurred while updating the variant.", ex);
             }
+        }
+
+        public async Task<bool> VariantNameExistsForProduct(Guid productId, string variantName)
+        {
+            return await _context.Variants
+                .AnyAsync(v =>
+                    v.ProductId == productId &&
+                    v.Name.ToLower() == variantName.ToLower());
         }
     }
 }

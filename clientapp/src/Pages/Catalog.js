@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import ProductVariantsModal from './ProductVariantsModal';
 import './Catalog.css';
 
 function Catalog() {
@@ -13,7 +14,8 @@ function Catalog() {
       totalCount: 0
     }
   });
-  const [inputPage, setInputPage] = useState(''); // Для ввода номера страницы
+  const [inputPage, setInputPage] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const abortControllerRef = useRef(null);
 
   const renderRating = (rating) => {
@@ -99,6 +101,15 @@ function Catalog() {
     }
   };
 
+  const handleProductClick = (product) => {
+    setSelectedProduct(product);
+  };
+
+  const closeModal = () => {
+    setSelectedProduct(null);
+  };
+
+
   const handlePageInputChange = (e) => {
     setInputPage(e.target.value);
   };
@@ -152,7 +163,11 @@ function Catalog() {
       
       <div className="products-grid">
         {state.products.map(product => (
-          <div key={product.productId} className="product-card">
+          <div 
+            key={product.productId} 
+            className="product-card"
+            onClick={() => handleProductClick(product)}
+          >
             <h3>{product.productName}</h3>
             <p className="price">
               {product.minPrice === product.maxPrice 
@@ -168,6 +183,11 @@ function Catalog() {
           </div>
         ))}
       </div>
+
+      <ProductVariantsModal 
+        product={selectedProduct} 
+        onClose={closeModal} 
+      />
 
       {state.pagination.totalCount > 0 && (
         <div className="pagination-container">

@@ -13,17 +13,23 @@ namespace SaGaMarket.Server.Controllers
         private readonly GetVariantUseCase _getVariantUseCase;
         private readonly UpdateVariantUseCase _updateVariantUseCase;
         private readonly DeleteVariantUseCase _deleteVariantUseCase;
+        private readonly GetAllVariantsOfOneProductUseCase _getAllVariantsUseCase;
+        private readonly UpdateCountVariantUseCase _updateCountVariantUseCase;
 
         public VariantController(
             CreateVariantUseCase createVariantUseCase,
             GetVariantUseCase getVariantUseCase,
             UpdateVariantUseCase updateVariantUseCase,
+            GetAllVariantsOfOneProductUseCase getAllVariantsUseCase,
+            UpdateCountVariantUseCase updateCountVariantUseCase,
             DeleteVariantUseCase deleteVariantUseCase)
         {
             _createVariantUseCase = createVariantUseCase;
             _getVariantUseCase = getVariantUseCase;
             _updateVariantUseCase = updateVariantUseCase;
             _deleteVariantUseCase = deleteVariantUseCase;
+            _updateCountVariantUseCase = updateCountVariantUseCase;
+            _getAllVariantsUseCase = getAllVariantsUseCase;
         }
 
         [HttpPost]
@@ -33,8 +39,19 @@ namespace SaGaMarket.Server.Controllers
             {
                 return BadRequest("Invalid variant data.");
             }
-            var variantId = await _createVariantUseCase.Handle(request);
-            return CreatedAtAction(nameof(Get), new { id = variantId }, null);
+            try
+            {
+                var variantId = await _createVariantUseCase.Handle(request);
+                return CreatedAtAction(nameof(Get), new { id = variantId }, null);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred while creating the variant.");
+            }
         }
 
         [HttpGet("{id}")]
@@ -49,6 +66,24 @@ namespace SaGaMarket.Server.Controllers
             return Ok(variant);
         }
 
+        [HttpGet("/api/products/{productId}/variants")]
+        public async Task<IActionResult> GetAllVariants(Guid productId)
+        {
+            try
+            {
+                var variants = await _getAllVariantsUseCase.Handle(productId);
+                return Ok(variants);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateVariantUseCase.UpdateVariantRequest request)
         {
@@ -60,6 +95,29 @@ namespace SaGaMarket.Server.Controllers
             try
             {
                 await _updateVariantUseCase.Handle(id, request);
+                return NoContent(); // Успешное обновление
+            }
+            catch (ArgumentException)
+            {
+                return NotFound();
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred while updating the variant.");
+            }
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateCount(Guid id, [FromBody] UpdateCountVariantUseCase.UpdateCountVariantRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest("Invalid variant data.");
+            }
+
+            try
+            {
+                await _updateCountVariantUseCase.Handle(id, request);
                 return NoContent(); // Успешное обновление
             }
             catch (ArgumentException)

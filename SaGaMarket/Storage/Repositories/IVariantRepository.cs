@@ -8,4 +8,6 @@ public interface IVariantRepository
     Task<bool> Update(Variant variant);
     Task Delete(Guid variantId);
     Task<Variant?> Get(Guid variantId);
+    Task<IEnumerable<Variant>> GetAllForProduct(Guid productId);
+    Task<bool> VariantNameExistsForProduct(Guid productId, string variantName);
 }

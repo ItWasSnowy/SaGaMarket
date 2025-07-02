@@ -3,8 +3,6 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './Pages/Home';
 import Catalog from './Pages/Catalog';
-import ProductList from './Pages/ProductList';
-import VariantDetail from './Pages/VariantDetail';
 
 function App() {
   return (
@@ -34,8 +32,6 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/catalog" element={<Catalog />} />
-            <Route path="/products" element={<ProductList />} />
-            <Route path="/variant/:variantId" element={<VariantDetail />} />
             {/* Заглушки для других страниц */}
             <Route path="/about" element={
               <section className="page-content">

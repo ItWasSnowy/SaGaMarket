@@ -61,23 +61,31 @@
 }
 
 .stars {
-  color: #ffc107;
-  font-size: 18px;
-  letter-spacing: 2px;
+  display: inline-flex;  /* Используем flex для точного контроля */
+  align-items: center;
+  gap: 0;               /* Убираем промежутки между звёздами */
+  letter-spacing: -1px;  /* Компенсируем пробелы между inline-элементами */
+  font-size: 18px;       /* Фиксируем размер */
 }
 
 .star {
   position: relative;
   display: inline-block;
+  margin-right: 0px;   /* "Притягиваем" звёзды друг к другу */
+  padding: 0;
+  line-height: 1;        /* Убираем лишние отступы по вертикали */
 }
 
+/* Полузаполненная звезда */
 .star.half::before {
   position: absolute;
   content: '★';
   width: 50%;
   overflow: hidden;
+  left: 0;
 }
 
+/* Пустая звезда */
 .star.empty {
   color: #e0e0e0;
 }
