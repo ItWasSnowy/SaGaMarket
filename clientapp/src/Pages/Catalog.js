@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import ProductVariantsModal from './ProductVariantsModal';
+import { useNavigate } from 'react-router-dom';
 import './Catalog.css';
 
 function Catalog() {
@@ -15,30 +15,37 @@ function Catalog() {
     }
   });
   const [inputPage, setInputPage] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const abortControllerRef = useRef(null);
+  const navigate = useNavigate();
 
-  const renderRating = (rating) => {
-    const normalizedRating = rating || 0;
-    const fullStars = Math.floor(normalizedRating);
-    const hasHalfStar = normalizedRating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+  const renderRating = (rating, reviewsCount) => {
+  const normalizedRating = rating || 0;
+  const fullStars = Math.floor(normalizedRating);
+  const hasHalfStar = normalizedRating % 1 >= 0.5;
+  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
-    return (
-      <div className="stars">
+  return (
+    <div className="product-rating">
+      <div className="stars-container">
         {[...Array(fullStars)].map((_, i) => (
-          <span key={`full-${i}`} className="star full">★</span>
+          <span key={`full-${i}`} className="star filled">★</span>
         ))}
-        {hasHalfStar && <span className="star half">★</span>}
+        {hasHalfStar && (
+          <span className="star half">★</span>
+        )}
         {[...Array(emptyStars)].map((_, i) => (
-          <span key={`empty-${i}`} className="star empty">★</span>
+          <span key={`empty-${i}`} className="star">★</span>
         ))}
-        <span className="rating-value">
-          {normalizedRating.toFixed(1)}
-        </span>
       </div>
-    );
-  };
+      <span className="rating-value">
+        {normalizedRating.toFixed(1)}
+      </span>
+      <span className="reviews-count">
+        ({reviewsCount} отзывов)
+      </span>
+    </div>
+  );
+};
 
   const fetchProducts = async (page = 1) => {
     if (abortControllerRef.current) {
@@ -70,7 +77,7 @@ function Catalog() {
           totalCount
         }
       });
-      setInputPage(''); // Сброс поля ввода после успешного перехода
+      setInputPage('');
 
     } catch (error) {
       if (axios.isCancel(error)) return;
@@ -102,33 +109,28 @@ function Catalog() {
   };
 
   const handleProductClick = (product) => {
-    setSelectedProduct(product);
+    navigate(`/product/${product.productId}`);
   };
-
-  const closeModal = () => {
-    setSelectedProduct(null);
-  };
-
 
   const handlePageInputChange = (e) => {
     setInputPage(e.target.value);
   };
 
   const handlePageJump = () => {
-  const pageNum = parseInt(inputPage);
-  const totalPages = Math.ceil(state.pagination.totalCount / state.pagination.pageSize);
-  
-  if (!isNaN(pageNum)) { 
-    if (pageNum >= 1 && pageNum <= totalPages) {
-      fetchProducts(pageNum);
-    } else {
-      setState(prev => ({
-        ...prev,
-        error: `Введите номер страницы от 1 до ${totalPages}`
-      }));
+    const pageNum = parseInt(inputPage);
+    const totalPages = Math.ceil(state.pagination.totalCount / state.pagination.pageSize);
+    
+    if (!isNaN(pageNum)) { 
+      if (pageNum >= 1 && pageNum <= totalPages) {
+        fetchProducts(pageNum);
+      } else {
+        setState(prev => ({
+          ...prev,
+          error: `Введите номер страницы от 1 до ${totalPages}`
+        }));
+      }
     }
-  }
-};
+  };
 
   const handlePageInputKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -174,20 +176,10 @@ function Catalog() {
                 ? `${product.minPrice} ₽` 
                 : `от ${product.minPrice} до ${product.maxPrice} ₽`}
             </p>
-            <div className="product-rating">
-              {renderRating(product.averageRating)}
-              <span className="reviews-count">
-                {product.reviewIds?.length || 0} отзывов
-              </span>
-            </div>
+            {renderRating(product.averageRating, product.reviewIds?.length || 0)}
           </div>
         ))}
       </div>
-
-      <ProductVariantsModal 
-        product={selectedProduct} 
-        onClose={closeModal} 
-      />
 
       {state.pagination.totalCount > 0 && (
         <div className="pagination-container">
