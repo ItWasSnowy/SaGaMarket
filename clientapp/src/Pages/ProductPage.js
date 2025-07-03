@@ -9,6 +9,8 @@ function ProductPage() {
   const [product, setProduct] = useState(null);
   const [variants, setVariants] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [comments, setComments] = useState({});
+  const [showComments, setShowComments] = useState({});
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,6 +18,7 @@ function ProductPage() {
     rating: 0,
     comment: ''
   });
+  const [newComment, setNewComment] = useState(''); // Состояние для нового комментария
 
   const renderRating = (rating) => {
     const normalizedRating = rating || 0;
@@ -59,6 +62,15 @@ function ProductPage() {
     }
   };
 
+  const fetchComments = async (reviewId) => {
+    try {
+      const response = await axios.get(`https://localhost:7182/api/Comment/by-review/${reviewId}`);
+      setComments(prev => ({ ...prev, [reviewId]: response.data }));
+    } catch (err) {
+      console.error('Ошибка при загрузке комментариев:', err);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -78,6 +90,12 @@ function ProductPage() {
         if (variantsRes.data.length > 0) {
           setSelectedVariant(variantsRes.data[0]);
         }
+
+        // Fetch comments for each review
+        reviewsRes.data.forEach(review => {
+          fetchComments(review.reviewId);
+          setShowComments(prev => ({ ...prev, [review.reviewId]: false })); // Изначально скрываем комментарии
+        });
       } catch (err) {
         setError(err.response?.data?.message || err.message || 'Ошибка при загрузке данных');
       } finally {
@@ -87,6 +105,10 @@ function ProductPage() {
 
     fetchData();
   }, [productId]);
+
+  const toggleComments = (reviewId) => {
+    setShowComments(prev => ({ ...prev, [reviewId]: !prev[reviewId] }));
+  };
 
   if (loading) return <div className="loading">Загрузка товара...</div>;
   if (error) return <div className="error">{error}</div>;
@@ -204,9 +226,30 @@ function ProductPage() {
                       {review.comment}
                     </div>
                   )}
-                  {review.comments?.length > 0 && (
-                    <div className="comments-count">
-                      {review.comments.length} {review.comments.length === 1 ? 'комментарий' : review.comments.length < 5 ? 'комментария' : 'комментариев'}
+                  <button className="toggle-comments-button" onClick={() => toggleComments(review.reviewId)}>
+                    {showComments[review.reviewId] ? 'Скрыть обсуждение' : 'Показать обсуждение'}
+                  </button>
+                  {showComments[review.reviewId] && comments[review.reviewId] && comments[review.reviewId].length > 0 && (
+                    <div className="comments-list">
+                      {comments[review.reviewId].map(comment => (
+                        <div key={comment.commentId} className="comment-card">
+                          <span className="comment-author">{/*comment.authorId ||*/ 'Аноним'}</span>
+                          <div className="comment-content">{comment.commentText}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Форма для добавления нового комментария в скрытом меню "Обсуждение" */}
+                  {showComments[review.reviewId] && (
+                    <div className="add-comment">
+                      <h4>Добавить комментарий</h4>
+                      <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Ваш комментарий..."
+                        rows="2"
+                      />
+                      <button>Добавить комментарий</button> {/* Кнопка без функционала */}
                     </div>
                   )}
                 </div>

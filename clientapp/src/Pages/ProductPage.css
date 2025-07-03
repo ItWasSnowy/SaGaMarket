@@ -202,3 +202,46 @@
   padding: 1rem;
   text-align: center;
 }
+.comments-list {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.comment-card {
+  margin-bottom: 5px;
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+.comment-author {
+  font-weight: bold;
+}
+
+.comment-content {
+  margin-left: 10px;
+}
+
+.add-comment {
+  margin-top: 10px;
+}
+
+.add-comment textarea {
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.add-comment button {
+  background-color: #4CAF50; /* Зеленый цвет */
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.add-comment button:hover {
+  background-color: #45a049; /* Темно-зеленый цвет при наведении */
+}
+
