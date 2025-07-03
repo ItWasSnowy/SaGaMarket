@@ -125,3 +125,80 @@
 .error {
   color: #d32f2f;
 }
+
+/* Стили для рейтинга */
+.stars-container {
+  display: inline-flex;
+  align-items: center;
+}
+
+.star {
+  color: #ccc;
+  font-size: 1.2rem;
+  margin-right: 2px;
+}
+
+.star.filled {
+  color: #ffc107;
+}
+
+.star.half {
+  position: relative;
+  color: #ccc;
+}
+
+.star.half:after {
+  content: '★';
+  position: absolute;
+  left: 0;
+  width: 50%;
+  overflow: hidden;
+  color: #ffc107;
+}
+
+.rating-value {
+  margin-left: 5px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.reviews-count {
+  margin-left: 5px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Стили для отзывов */
+.reviews-section {
+  margin-top: 2rem;
+}
+
+.review-card {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.review-author {
+  font-weight: bold;
+}
+
+.review-date {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.no-reviews {
+  color: #666;
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+}

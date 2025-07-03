@@ -13,14 +13,17 @@ namespace SaGaMarket.Server.Controllers
         private readonly GetReviewUseCase _getReviewUseCase;
         private readonly UpdateReviewUseCase _updateReviewUseCase;
         private readonly DeleteReviewUseCase _deleteReviewUseCase;
+        private readonly GetAllReviewsOfOneProductUseCase _getAllReviewsOfOneProductUseCase;
 
         public ReviewController(
             CreateReviewUseCase createReviewUseCase,
             GetReviewUseCase getReviewUseCase,
             UpdateReviewUseCase updateReviewUseCase,
+            GetAllReviewsOfOneProductUseCase getAllReviewsOfOneProductUseCase,
             DeleteReviewUseCase deleteReviewUseCase)
         {
             _createReviewUseCase = createReviewUseCase;
+            _getAllReviewsOfOneProductUseCase = getAllReviewsOfOneProductUseCase;
             _getReviewUseCase = getReviewUseCase;
             _updateReviewUseCase = updateReviewUseCase;
             _deleteReviewUseCase = deleteReviewUseCase;
@@ -41,7 +44,7 @@ namespace SaGaMarket.Server.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return Conflict(ex.Message); // 409 Conflict - пользователь уже оставил отзыв
+                return Conflict(ex.Message); 
             }
             
         }
@@ -77,6 +80,24 @@ namespace SaGaMarket.Server.Controllers
             catch (Exception)
             {
                 return StatusCode(500, "An error occurred while updating the review.");
+            }
+        }
+
+        [HttpGet("/api/products/{productId}/reviews")]
+        public async Task<IActionResult> GetAllProductReviews(Guid productId)
+        {
+            try
+            {
+                var reviews = await _getAllReviewsOfOneProductUseCase.Handle(productId);
+                return Ok(reviews);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message); // 404 если продукт не найден
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Внутренняя ошибка сервера"); // 500 для других ошибок
             }
         }
 

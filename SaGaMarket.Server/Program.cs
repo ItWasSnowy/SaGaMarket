@@ -39,7 +39,9 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<CreateReviewUseCase>();
             builder.Services.AddScoped<DeleteReviewUseCase>();
             builder.Services.AddScoped<GetReviewUseCase>();
+            builder.Services.AddScoped<GetAllReviewsOfOneProductUseCase>();
             builder.Services.AddScoped<UpdateReviewUseCase>();
+            builder.Services.AddScoped<GetProductsRatingsUseCase>();
             builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
             //-------------------------------
             builder.Services.AddScoped<CreateProductUseCase>();

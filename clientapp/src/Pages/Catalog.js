@@ -18,36 +18,7 @@ function Catalog() {
   const abortControllerRef = useRef(null);
   const navigate = useNavigate();
 
-  const renderRating = (rating, reviewsCount) => {
-  const normalizedRating = rating || 0;
-  const fullStars = Math.floor(normalizedRating);
-  const hasHalfStar = normalizedRating % 1 >= 0.5;
-  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-  return (
-    <div className="product-rating">
-      <div className="stars-container">
-        {[...Array(fullStars)].map((_, i) => (
-          <span key={`full-${i}`} className="star filled">★</span>
-        ))}
-        {hasHalfStar && (
-          <span className="star half">★</span>
-        )}
-        {[...Array(emptyStars)].map((_, i) => (
-          <span key={`empty-${i}`} className="star">★</span>
-        ))}
-      </div>
-      <span className="rating-value">
-        {normalizedRating.toFixed(1)}
-      </span>
-      <span className="reviews-count">
-        ({reviewsCount} отзывов)
-      </span>
-    </div>
-  );
-};
-
-  const fetchProducts = async (page = 1) => {
+  const fetchProductsWithRatings = async (page = 1) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -57,7 +28,8 @@ function Catalog() {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       
-      const response = await axios.get('https://localhost:7182/api/Product', {
+      // 1. Запрос списка продуктов с пагинацией
+      const productsResponse = await axios.get('https://localhost:7182/api/Product', {
         params: { 
           page, 
           pageSize: state.pagination.pageSize 
@@ -65,10 +37,45 @@ function Catalog() {
         signal: abortControllerRef.current.signal
       });
 
-      const totalCount = parseInt(response.headers['x-total-count']) || 0;
+      const totalCount = parseInt(productsResponse.headers['x-total-count'], 10) || 0;
+      
+      // 2. Подготовка ID для запроса рейтингов
+      const productIds = productsResponse.data
+        .map(p => p.productId)
+        .filter(id => id) // Фильтрация null/undefined
+        .join(',');
+
+      let productsWithRatings = productsResponse.data.map(p => ({
+        ...p,
+        averageRating: 0,
+        reviewsCount: 0
+      }));
+
+      // 3. Запрос рейтингов только если есть ID товаров
+      if (productIds) {
+        try {
+          const ratingsResponse = await axios.get('https://localhost:7182/api/Product/products', {
+            params: { productIds },
+            signal: abortControllerRef.current.signal
+          });
+
+          // Объединение данных
+          productsWithRatings = productsResponse.data.map(product => {
+            const ratingInfo = ratingsResponse.data.find(r => r.productId === product.productId);
+            return {
+              ...product,
+              averageRating: ratingInfo?.averageRating || 0,
+              reviewsCount: ratingInfo?.reviewsCount || 0
+            };
+          });
+        } catch (ratingsError) {
+          console.warn('Ошибка загрузки рейтингов:', ratingsError);
+          // Продолжаем без рейтингов, если их не удалось загрузить
+        }
+      }
 
       setState({
-        products: response.data,
+        products: productsWithRatings,
         loading: false,
         error: null,
         pagination: {
@@ -82,38 +89,39 @@ function Catalog() {
     } catch (error) {
       if (axios.isCancel(error)) return;
       
+      console.error('Ошибка загрузки:', error);
       setState(prev => ({
         ...prev,
         loading: false,
-        error: error.response?.data?.message || error.message || 'Ошибка при загрузке данных'
+        error: error.response?.data?.message || 
+              error.response?.data?.Message || 
+              error.message || 
+              'Ошибка при загрузке данных'
       }));
     }
   };
 
   useEffect(() => {
-    fetchProducts();
-    return () => abortControllerRef.current?.abort();
+    fetchProductsWithRatings(state.pagination.page);
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
   const handleNextPage = () => {
     const totalPages = Math.ceil(state.pagination.totalCount / state.pagination.pageSize);
     if (state.pagination.page < totalPages) {
-      fetchProducts(state.pagination.page + 1);
+      fetchProductsWithRatings(state.pagination.page + 1);
     }
   };
 
   const handlePrevPage = () => {
     if (state.pagination.page > 1) {
-      fetchProducts(state.pagination.page - 1);
+      fetchProductsWithRatings(state.pagination.page - 1);
     }
-  };
-
-  const handleProductClick = (product) => {
-    navigate(`/product/${product.productId}`);
-  };
-
-  const handlePageInputChange = (e) => {
-    setInputPage(e.target.value);
   };
 
   const handlePageJump = () => {
@@ -122,7 +130,7 @@ function Catalog() {
     
     if (!isNaN(pageNum)) { 
       if (pageNum >= 1 && pageNum <= totalPages) {
-        fetchProducts(pageNum);
+        fetchProductsWithRatings(pageNum);
       } else {
         setState(prev => ({
           ...prev,
@@ -132,10 +140,35 @@ function Catalog() {
     }
   };
 
-  const handlePageInputKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handlePageJump();
-    }
+  const renderRating = (rating, reviewsCount) => {
+    const normalizedRating = rating || 0;
+    const fullStars = Math.floor(normalizedRating);
+    const hasHalfStar = normalizedRating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    return (
+      <div className="product-rating">
+        <div className="stars-container">
+          {[...Array(fullStars)].map((_, i) => (
+            <span key={`full-${i}`} className="star filled">★</span>
+          ))}
+          {hasHalfStar && (
+            <span className="star half">★</span>
+          )}
+          {[...Array(emptyStars)].map((_, i) => (
+            <span key={`empty-${i}`} className="star">★</span>
+          ))}
+        </div>
+        <span className="rating-value">
+          {normalizedRating.toFixed(1)}
+        </span>
+        {reviewsCount > 0 && (
+          <span className="reviews-count">
+            ({reviewsCount} {reviewsCount === 1 ? 'отзыв' : reviewsCount < 5 ? 'отзыва' : 'отзывов'})
+          </span>
+        )}
+      </div>
+    );
   };
 
   if (state.error) {
@@ -144,7 +177,7 @@ function Catalog() {
         <h3>Ошибка</h3>
         <p>{state.error}</p>
         <button 
-          onClick={() => fetchProducts(state.pagination.page)}
+          onClick={() => fetchProductsWithRatings(state.pagination.page)}
           className="retry-button"
         >
           Повторить попытку
@@ -168,15 +201,30 @@ function Catalog() {
           <div 
             key={product.productId} 
             className="product-card"
-            onClick={() => handleProductClick(product)}
+            onClick={() => navigate(`/product/${product.productId}`)}
           >
+            {product.imageUrl ? (
+              <img 
+                src={product.imageUrl} 
+                alt={product.productName} 
+                className="product-image"
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/300?text=No+Image';
+                  e.target.onerror = null;
+                }}
+              />
+            ) : (
+              <div className="product-image-placeholder">
+                <span>Нет изображения</span>
+              </div>
+            )}
             <h3>{product.productName}</h3>
             <p className="price">
               {product.minPrice === product.maxPrice 
-                ? `${product.minPrice} ₽` 
-                : `от ${product.minPrice} до ${product.maxPrice} ₽`}
+                ? `${product.minPrice.toLocaleString()} ₽` 
+                : `от ${product.minPrice.toLocaleString()} до ${product.maxPrice.toLocaleString()} ₽`}
             </p>
-            {renderRating(product.averageRating, product.reviewIds?.length || 0)}
+            {renderRating(product.averageRating, product.reviewsCount)}
           </div>
         ))}
       </div>
@@ -187,6 +235,7 @@ function Catalog() {
             <button 
               onClick={handlePrevPage}
               disabled={state.pagination.page === 1 || state.loading}
+              className="pagination-button"
             >
               Назад
             </button>
@@ -198,6 +247,7 @@ function Catalog() {
             <button 
               onClick={handleNextPage}
               disabled={state.pagination.page >= totalPages || state.loading}
+              className="pagination-button"
             >
               Вперед
             </button>
@@ -209,8 +259,8 @@ function Catalog() {
               min="1"
               max={totalPages}
               value={inputPage}
-              onChange={handlePageInputChange}
-              onKeyPress={handlePageInputKeyPress}
+              onChange={(e) => setInputPage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handlePageJump()}
               placeholder="№ страницы"
               className="page-input"
             />

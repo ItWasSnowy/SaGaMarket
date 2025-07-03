@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SaGaMarket.Core.Entities;
 using SaGaMarket.Core.Storage.Repositories;
+using SaGaMarket.Core.UseCases.ReviewUseCases;
 using SaGaMarket.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
@@ -79,6 +80,29 @@ namespace SaGaMarket.Storage.EfCore.Repository
         {
             return await _context.Reviews
                 .AnyAsync(r => r.AuthorId == userId && r.ProductId == productId);
+        }
+
+        public async Task<IEnumerable<Review>> GetAllForProduct(Guid productId)
+        {
+            return await _context.Reviews
+                .Where(r => r.ProductId == productId)
+                .OrderByDescending(r => r.CreatedAt) 
+                .AsNoTracking() 
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<ProductRatingDto>> GetProductsRatings(IEnumerable<Guid> productIds)
+        {
+            return await _context.Reviews
+                .Where(r => productIds.Contains(r.ProductId))
+                .GroupBy(r => r.ProductId)
+                .Select(g => new ProductRatingDto
+                {
+                    ProductId = g.Key,
+                    AverageRating = g.Average(r => r.UserRating),
+                    ReviewsCount = g.Count()
+                })
+                .ToListAsync();
         }
 
     }
