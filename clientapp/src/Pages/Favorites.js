@@ -9,7 +9,6 @@ function Favorites({ setFavoritesCount }) {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // Загрузка userId из localStorage при монтировании
   useEffect(() => {
     const savedUserId = localStorage.getItem('userId');
     if (savedUserId) {
@@ -17,12 +16,24 @@ function Favorites({ setFavoritesCount }) {
     }
   }, []);
 
-  // Загрузка избранного при изменении userId
   useEffect(() => {
     if (userId) {
       fetchUserFavorites(userId);
     }
   }, [userId]);
+
+  const fetchVariantsForProduct = async (productId) => {
+    try {
+      const response = await fetch(
+        `https://localhost:7182/api/products/${productId}/variants`
+      );
+      if (!response.ok) throw new Error(`Не удалось загрузить варианты для товара ${productId}`);
+      return await response.json();
+    } catch (err) {
+      console.error(`Ошибка при загрузке вариантов для товара ${productId}:`, err);
+      return [];
+    }
+  };
 
   const fetchUserFavorites = async (userId) => {
     try {
@@ -37,13 +48,11 @@ function Favorites({ setFavoritesCount }) {
       if (!favoritesResponse.ok) throw new Error('Не удалось загрузить избранное');
       
       const productIds = await favoritesResponse.json();
-      console.log('Product IDs in favorites:', productIds);
       
       if (!Array.isArray(productIds)) {
         throw new Error('Некорректный формат данных избранного');
       }
 
-      // Обновляем счетчик
       setFavoritesCount(productIds.length);
 
       if (productIds.length === 0) {
@@ -51,7 +60,7 @@ function Favorites({ setFavoritesCount }) {
         return;
       }
 
-      // 2. Получаем полную информацию о товарах
+      // 2. Получаем основную информацию о товарах
       const productsResponse = await fetch(
         `https://localhost:7182/api/favorites/info?productIds=${productIds.join('&productIds=')}`
       );
@@ -59,9 +68,37 @@ function Favorites({ setFavoritesCount }) {
       if (!productsResponse.ok) throw new Error('Не удалось загрузить информацию о товарах');
       
       const productsData = await productsResponse.json();
-      console.log('Favorites products data:', productsData);
-      
-      setFavoriteProducts(productsData || []);
+
+      // 3. Для каждого продукта получаем варианты и объединяем данные
+      const productsWithVariants = await Promise.all(
+        productsData.map(async product => {
+          const variants = await fetchVariantsForProduct(product.productId);
+          
+          // Формируем строку с диапазоном цен
+          let priceRange = 'Цена не указана';
+          if (variants.length > 0) {
+            const prices = variants.map(v => v.price);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            
+            priceRange = minPrice === maxPrice 
+              ? `${minPrice} ₽` 
+              : `${minPrice} - ${maxPrice} ₽`;
+          }
+
+          // Формируем список вариантов для отображения
+          const variantNames = variants.map(v => v.name).join(', ');
+
+          return {
+            ...product,
+            priceRange,
+            variantNames,
+            variants
+          };
+        })
+      );
+
+      setFavoriteProducts(productsWithVariants);
     } catch (err) {
       console.error('Ошибка при загрузке избранного:', err);
       setError(err.message);
@@ -74,9 +111,9 @@ function Favorites({ setFavoritesCount }) {
   const removeFromFavorites = async (productId) => {
     try {
       const response = await fetch(
-        `https://localhost:7182/api/favorites/items?userId=${userId}`,
+        `https://localhost:7182/api/favorites/remove?userId=${userId}`,
         {
-          method: 'DELETE',
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -84,11 +121,16 @@ function Favorites({ setFavoritesCount }) {
         }
       );
 
-      if (!response.ok) throw new Error('Не удалось удалить из избранного');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Не удалось удалить из избранного');
+      }
       
-      // Обновляем список после удаления
+      // Обновляем список избранного после удаления
       await fetchUserFavorites(userId);
+      
     } catch (err) {
+      console.error('Ошибка при удалении из избранного:', err);
       setError(err.message);
     }
   };
@@ -134,29 +176,33 @@ function Favorites({ setFavoritesCount }) {
               >
                 <img 
                   src={product.imageUrl || '/images/default-product.png'} 
-                  alt={product.productName} 
+                  alt={product.name} 
                 />
               </div>
               
               <div className="product-info">
                 <h3 onClick={() => navigate(`/product/${product.productId}`)}>
-                  {product.productName}
+                  {product.name}
                 </h3>
                 
-                <div className="rating">
-                  {!isNaN(product.productRating) ? (
+                <div className="product-details">
+                  <p className="variants">Варианты: {product.variantNames || 'Нет вариантов'}</p>
+                  <p className="price-range">Цена: {product.priceRange}</p>
+                  <p className="category">Категория: {product.category}</p>
+                  <p className="seller">Продавец: {product.sellerName}</p>
+                </div>
+                
+                {/* <div className="rating">
+                  {!isNaN(product.averageRating) ? (
                     <>
-                      {'★'.repeat(Math.round(product.productRating))}
-                      {'☆'.repeat(5 - Math.round(product.productRating))}
-                      <span>({product.productRating.toFixed(1)})</span>
+                      {'★'.repeat(Math.round(product.averageRating))}
+                      {'☆'.repeat(5 - Math.round(product.averageRating))}
+                      <span>({product.averageRating.toFixed(1)})</span>
                     </>
                   ) : (
                     <span>Нет оценок</span>
                   )}
-                </div>
-                
-                <p className="price">Цена: ${product.price?.toFixed(2) || 'N/A'}</p>
-                <p className="seller">Продавец: {product.sellerName}</p>
+                </div> */}
                 
                 <div className="product-actions">
                   <button 
