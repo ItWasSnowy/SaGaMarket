@@ -14,6 +14,7 @@ public class Variant
     [JsonIgnore]
     public Product Product { get; set; } = null!;
     public PriceGraph PriceHistory { get; set; } = new();
+    public string? ImageUrl { get; set; }
 }
 public class PriceGraph
 {

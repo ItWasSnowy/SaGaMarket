@@ -10,4 +10,5 @@ public interface IVariantRepository
     Task<Variant?> Get(Guid variantId);
     Task<IEnumerable<Variant>> GetAllForProduct(Guid productId);
     Task<bool> VariantNameExistsForProduct(Guid productId, string variantName);
+    Task<List<Variant>> GetVariantsWithDetailsAsync(IEnumerable<Guid> variantIds);
 }

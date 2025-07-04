@@ -111,5 +111,26 @@ namespace SaGaMarket.Storage.EfCore.Repository
                 throw new Exception("An error occurred while updating the product.", ex);
             }
         }
+
+        public async Task<List<Product>> GetProductsWithDetailsAsync(IEnumerable<Guid> productIds)
+        {
+            return await _context.Products
+                .Where(p => productIds.Contains(p.ProductId))
+                .Include(p => p.Seller)
+                .Include(p => p.Variants)
+                .Include(p => p.Reviews)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+        //public async Task<List<Product>> GetProductsByIdsWithDetailsAsync(IEnumerable<Guid> productIds)
+        //{
+        //    return await _context.Products
+        //        .Where(p => productIds.Contains(p.ProductId))
+        //        .Include(p => p.Seller) // Загружаем информацию о продавце
+        //        .Include(p => p.Variants) // Загружаем варианты товара
+        //        .Include(p => p.Tags) // Загружаем теги
+        //        .AsNoTracking()
+        //        .ToListAsync();
+        //}
     }
 }

@@ -36,5 +36,12 @@ public class CartRepository : ICartRepository
             return false;
         }
     }
-    
+    public async Task<List<Guid>> GetUserCartItems(Guid userId)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.UserId == userId);
+
+        return user?.ProductFromCartIds ?? new List<Guid>();
+    }
+
 }

@@ -101,5 +101,16 @@ namespace SaGaMarket.Storage.EfCore.Repository
                     v.ProductId == productId &&
                     v.Name.ToLower() == variantName.ToLower());
         }
+
+        public async Task<List<Variant>> GetVariantsWithDetailsAsync(IEnumerable<Guid> variantIds)
+        {
+            return await _context.Variants
+                .Where(v => variantIds.Contains(v.VariantId))
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Seller)
+                .Include(v => v.PriceHistory)
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 }

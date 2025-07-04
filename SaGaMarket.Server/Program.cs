@@ -82,13 +82,18 @@ namespace SaGaMarket.Server
             //-------------------------------
             builder.Services.AddScoped<IUserRoleService, UserRepository>();
             builder.Services.AddScoped<GetUserRoleUseCase>();
+            builder.Services.AddScoped<GetUserCartUseCase>();
             builder.Services.AddScoped<AddToCartUseCase>();
             builder.Services.AddScoped<RemoveFromCartUseCase>();
+            builder.Services.AddScoped<GetCartItemsInfoUseCase>();
             builder.Services.AddScoped<AddToFavoritesUseCase>();
             builder.Services.AddScoped<RemoveFromFavoritesUseCase>();
             builder.Services.AddScoped<GetProductWithPagination>();
             builder.Services.AddScoped<ICartRepository, CartRepository>();
-            
+            builder.Services.AddScoped<IFavoritesRepository, FavoritesRepository>();
+            builder.Services.AddScoped<GetUserFavoritesUseCase>();
+            builder.Services.AddScoped<GetProductsInfoUseCase>();
+
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>

@@ -11,5 +11,6 @@ namespace SaGaMarket.Core.Storage.Repositories
     {
         Task<User?> GetUserWithCart(Guid userId);
         Task<bool> SaveChangesAsync();
+        Task<List<Guid>> GetUserCartItems(Guid userId);
     }
 }

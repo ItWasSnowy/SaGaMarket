@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SaGaMarket.Core.Entities;
+using SaGaMarket.Core.UseCases;
 using System;
 using System.Threading.Tasks;
 using static AddToFavoritesUseCase;
@@ -13,16 +14,22 @@ public class FavoritesController : ControllerBase
     private readonly AddToFavoritesUseCase _addToFavoritesUseCase;
     private readonly RemoveFromFavoritesUseCase _removeFromFavoritesUseCase;
     private readonly GetUserRoleUseCase _getUserRoleUseCase;
+    private readonly GetUserFavoritesUseCase _getUserFavoritesUseCase;
+    private readonly GetProductsInfoUseCase _getProductsInfoUseCase;
     private readonly ILogger<FavoritesController> _logger;
 
     public FavoritesController(
         AddToFavoritesUseCase addToFavoritesUseCase,
-        RemoveFromFavoritesUseCase removeFromFavoritesUseCase,
+        GetProductsInfoUseCase getProductsInfoUseCase,
+        GetUserFavoritesUseCase getUserFavoritesUseCase,
+    RemoveFromFavoritesUseCase removeFromFavoritesUseCase,
         GetUserRoleUseCase getUserRoleUseCase,
         ILogger<FavoritesController> logger)
     {
         _addToFavoritesUseCase = addToFavoritesUseCase;
-        _removeFromFavoritesUseCase = removeFromFavoritesUseCase;
+       _getUserFavoritesUseCase = getUserFavoritesUseCase;
+    _removeFromFavoritesUseCase = removeFromFavoritesUseCase;
+        _getProductsInfoUseCase = getProductsInfoUseCase;
         _getUserRoleUseCase = getUserRoleUseCase;
         _logger = logger;
     }
@@ -107,5 +114,42 @@ public class FavoritesController : ControllerBase
             _logger.LogError(ex, "Ошибка при удалении из избранного для пользователя {User Id}", userId);
             return StatusCode(500, new { Error = "Внутренняя ошибка сервера" });
         }
+
     }
+    [HttpGet("items")]
+    public async Task<IActionResult> GetUserFavorites([FromQuery] Guid userId)
+    {
+        try
+        {
+            if (userId == Guid.Empty)
+                return BadRequest("User ID must be provided");
+
+            var favoriteItems = await _getUserFavoritesUseCase.Execute(userId);
+            return Ok(favoriteItems);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting favorites for user {UserId}", userId);
+            return StatusCode(500, new { Error = "Internal server error" });
+        }
+    }
+
+    [HttpGet("info")]
+    public async Task<IActionResult> GetProductsInfo([FromQuery] Guid[] productIds)
+    {
+        try
+        {
+            if (productIds == null || productIds.Length == 0)
+                return BadRequest("At least one product ID must be provided");
+
+            var productsInfo = await _getProductsInfoUseCase.Execute(productIds);
+            return Ok(productsInfo);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting products info");
+            return StatusCode(500, new { Error = "Internal server error" });
+        }
+    }
+
 }
