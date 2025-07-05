@@ -30,7 +30,7 @@ namespace SaGaMarket.Core.UseCases.OrderUseCases
                 DiscountAmount = order.DiscountAmount,
                 FinalPrice = order.TotalPrice - order.DiscountAmount,
                 OrderDate = order.OrderDate,
-                Status = order.OrderStatus,
+                Status = OrderStatus.Processing.ToString(),
                 ShippingAddress = order.ShippingAddress,
                 PaymentMethod = order.PaymentMethod,
                 Items = order.OrderItems.Select(oi => new OrderItemDto

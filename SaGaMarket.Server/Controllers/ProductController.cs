@@ -1,9 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SaGaMarket.Core.UseCases.ProductUseCases;
 using SaGaMarket.Core.UseCases.ReviewUseCases;
+using SaGaMarket.Identity;
+using SaGaMarket.Server.Identity;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
+using static CreateProductUseCase;
+using static SaGaMarket.Core.UseCases.ProductUseCases.UpdateProductUseCase;
 
 namespace SaGaMarket.Server.Controllers
 {
@@ -17,6 +24,8 @@ namespace SaGaMarket.Server.Controllers
         private readonly DeleteProductUseCase _deleteProductUseCase;
         private readonly GetProductWithPagination _getProductWithPagination;
         private readonly GetProductsRatingsUseCase _getProductsRatingsUseCase;
+        private readonly UserManager<SaGaMarketIdentityUser> _userManager;
+        private readonly ILogger<ProductController> _logger;
 
         public ProductController(
             CreateProductUseCase createProductUseCase,
@@ -24,7 +33,9 @@ namespace SaGaMarket.Server.Controllers
             UpdateProductUseCase updateProductUseCase,
             GetProductWithPagination getProductWithPagination,
             GetProductsRatingsUseCase getProductsRatingsUseCase,
-        DeleteProductUseCase deleteProductUseCase)
+            DeleteProductUseCase deleteProductUseCase,
+            UserManager<SaGaMarketIdentityUser> userManager,
+            ILogger<ProductController> logger)
         {
             _createProductUseCase = createProductUseCase;
             _getProductUseCase = getProductUseCase;
@@ -32,113 +43,161 @@ namespace SaGaMarket.Server.Controllers
             _updateProductUseCase = updateProductUseCase;
             _deleteProductUseCase = deleteProductUseCase;
             _getProductsRatingsUseCase = getProductsRatingsUseCase;
+            _userManager = userManager;
+            _logger = logger;
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetProducts(
-    [FromQuery] int page = 1,
-    [FromQuery] int pageSize = 10)
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
                 var (products, totalCount) = await _getProductWithPagination
                     .GetProductsWithPaginationAsync(page, pageSize);
 
-                HttpContext.Response.Headers.Append("X-Total-Count", totalCount.ToString());
-
+                Response.Headers.Append("X-Total-Count", totalCount.ToString());
                 return Ok(products);
             }
             catch (Exception ex)
             {
-
+                _logger.LogError(ex, "Error getting products");
                 return StatusCode(500, new
                 {
-                    Message = "Ошибка сервера",
-                    Detailed = ex.Message
+                    Error = "Internal server error",
+                    Details = ex.Message
                 });
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateProductUseCase.CreateProductRequest request, [FromQuery] Guid sellerId)
-        {
-            if (request == null)
-            {
-                return BadRequest("Invalid product data.");
-            }
-
-            var productId = await _createProductUseCase.Handle(request, sellerId);
-            return CreatedAtAction(nameof(Get), new { id = productId }, null);
-        }
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
-        {
-            var product = await _getProductUseCase.Handle(id);
-            if (product == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(product);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductUseCase.UpdateProductRequest request, [FromQuery] Guid sellerId)
+        [Authorize(Roles = "seller,admin")]
+        public async Task<IActionResult> Create([FromBody] CreateProductRequest request)
         {
             try
             {
-                await _updateProductUseCase.Handle(id, request, sellerId);
-                return NoContent();
+                var sellerId = Guid.Parse(_userManager.GetUserId(User));
+                var productId = await _createProductUseCase.Handle(request, sellerId);
+
+                return CreatedAtAction(nameof(Get), new { id = productId }, new
+                {
+                    ProductId = productId,
+                    Message = "Product created successfully"
+                });
             }
-            catch (ArgumentException)
+            catch (ArgumentException ex)
             {
-                return NotFound();
+                _logger.LogWarning(ex, "Invalid product data");
+                return BadRequest(new { Error = ex.Message });
             }
-            catch (UnauthorizedAccessException)
+            catch (Exception ex)
             {
-                return Forbid();
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "An error occurred while updating the product.");
+                _logger.LogError(ex, "Error creating product");
+                return StatusCode(500, new { Error = "Internal server error" });
             }
         }
 
-        [HttpGet("products")]
+        [HttpGet("{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Get(Guid id)
+        {
+            try
+            {
+                var product = await _getProductUseCase.Handle(id);
+                return product == null
+                    ? NotFound(new { Error = "Product not found" })
+                    : Ok(product);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting product {ProductId}", id);
+                return StatusCode(500, new { Error = "Internal server error" });
+            }
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "seller,admin")]
+        public async Task<IActionResult> Update(
+            Guid id,
+            [FromBody] UpdateProductRequest request)
+        {
+            try
+            {
+                var sellerId = Guid.Parse(_userManager.GetUserId(User));
+                await _updateProductUseCase.Handle(id, request, sellerId);
+
+                return Ok(new { Message = "Product updated successfully" });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Product not found {ProductId}", id);
+                return NotFound(new { Error = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                _logger.LogWarning("Unauthorized access to product {ProductId}", id);
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating product {ProductId}", id);
+                return StatusCode(500, new { Error = "Internal server error" });
+            }
+        }
+
+        [HttpGet("ratings")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetProductsRatings([FromQuery] string productIds)
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(productIds))
+                {
+                    return BadRequest(new { Error = "Product IDs are required" });
+                }
+
                 var ids = productIds.Split(',')
                     .Where(id => !string.IsNullOrWhiteSpace(id))
                     .Select(Guid.Parse)
-                .ToList();
+                    .ToList();
 
                 var ratings = await _getProductsRatingsUseCase.Handle(ids);
                 return Ok(ratings);
             }
             catch (Exception ex)
             {
-                return BadRequest(new { error = ex.Message });
+                _logger.LogError(ex, "Error getting product ratings");
+                return StatusCode(500, new { Error = "Internal server error" });
             }
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id, [FromQuery] Guid sellerId)
+        [Authorize(Roles = "seller,admin")]
+        public async Task<IActionResult> Delete(Guid id)
         {
             try
             {
+                var sellerId = Guid.Parse(_userManager.GetUserId(User));
                 await _deleteProductUseCase.Handle(id, sellerId);
-                return NoContent();
+
+                return Ok(new { Message = "Product deleted successfully" });
             }
             catch (InvalidOperationException ex)
             {
-                return NotFound(ex.Message);
+                _logger.LogWarning(ex, "Product not found {ProductId}", id);
+                return NotFound(new { Error = ex.Message });
             }
-            catch (Exception)
+            catch (UnauthorizedAccessException)
             {
-                return StatusCode(500, "An error occurred while deleting the product.");
+                _logger.LogWarning("Unauthorized delete attempt {ProductId}", id);
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting product {ProductId}", id);
+                return StatusCode(500, new { Error = "Internal server error" });
             }
         }
     }

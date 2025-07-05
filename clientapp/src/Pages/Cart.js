@@ -2,163 +2,256 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Cart.css';
 
-function Cart() {
-  const [userId, setUserId] = useState('');
-  const [cartItems, setCartItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+function Cart({ setCartItemsCount }) {
+  const [cartState, setCartState] = useState({
+    items: [],
+    isLoading: true,
+    error: null,
+    isEmpty: true
+  });
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const savedUserId = localStorage.getItem('userId');
-    if (savedUserId) {
-      setUserId(savedUserId);
-      fetchUserCart(savedUserId);
+  const getCurrentUser = () => {
+    const userData = localStorage.getItem('userData');
+    if (!userData) {
+      navigate('/login');
+      return null;
     }
-  }, []);
-
-  const fetchProductDetails = async (variantIds) => {
-    try {
-      const response = await fetch(`https://localhost:7182/api/cart/info?variantIds=${variantIds.join('&variantIds=')}`);
-      if (!response.ok) throw new Error('Failed to fetch product details');
-      return await response.json();
-    } catch (err) {
-      console.error('Error fetching product details:', err);
-      throw err;
-    }
+    return JSON.parse(userData);
   };
 
-  const fetchUserCart = async (userId) => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`https://localhost:7182/api/cart/items?userId=${userId}`);
-      
-      if (!response.ok) throw new Error('Failed to fetch cart');
-      
-      const variantIds = await response.json();
-      console.log('Received variant IDs:', variantIds);
-      
-      if (!Array.isArray(variantIds) ){
-        throw new Error('Expected array of variant IDs');
-      }
+  const fetchCartItems = async () => {
+    const user = getCurrentUser();
+    if (!user?.userId) return;
 
-      if (variantIds.length === 0) {
-        setCartItems([]);
+    try {
+      setCartState(prev => ({ ...prev, isLoading: true, error: null }));
+
+      const itemsResponse = await fetch(`https://localhost:7182/api/cart/items?userId=${user.userId}`, {
+        credentials: 'include'
+      });
+
+      if (itemsResponse.status === 401) {
+        localStorage.removeItem('userData');
+        navigate('/login');
         return;
       }
 
-      const productsData = await fetchProductDetails(variantIds);
-      console.log('Received product details:', productsData);
-      
-      setCartItems(productsData || []);
-    } catch (err) {
-      console.error('Error fetching cart:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+      if (!itemsResponse.ok) {
+        throw new Error(`Ошибка сервера: ${itemsResponse.status}`);
+      }
+
+      const variantIds = await itemsResponse.json();
+
+      if (Array.isArray(variantIds) && variantIds.length > 0) {
+        const baseUrl = 'https://localhost:7182/api/cart/info?';
+        const queryParams = variantIds.map(id => `variantIds=${encodeURIComponent(id)}`).join('&');
+        const detailsUrl = baseUrl + queryParams;
+
+        const detailsResponse = await fetch(detailsUrl, {
+          credentials: 'include'
+        });
+
+        if (!detailsResponse.ok) {
+          throw new Error(`Ошибка загрузки деталей: ${detailsResponse.status}`);
+        }
+
+        const productsData = await detailsResponse.json();
+
+        setCartState({
+          items: productsData,
+          isLoading: false,
+          error: null,
+          isEmpty: productsData.length === 0
+        });
+        setCartItemsCount(productsData.length);
+      } else {
+        setCartState({
+          items: [],
+          isLoading: false,
+          error: null,
+          isEmpty: true
+        });
+        setCartItemsCount(0);
+      }
+    } catch (error) {
+      console.error('Cart loading error:', error);
+      setCartState({
+        items: [],
+        isLoading: false,
+        error: error.message,
+        isEmpty: true
+      });
+      setCartItemsCount(0);
     }
   };
 
-  const removeFromCart = async (variantId) => {
+  const removeItem = async (variantId) => {
+    const user = getCurrentUser();
+    if (!user?.userId) return;
+
     try {
-      const response = await fetch(`https://localhost:7182/api/cart/remove?userId=${userId}`, {
+      setCartState(prev => ({ ...prev, isLoading: true }));
+
+      const response = await fetch('https://localhost:7182/api/cart/remove', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ variantId })
+        body: JSON.stringify({
+          userId: user.userId,
+          variantId: variantId
+        }),
+        credentials: 'include'
       });
 
-      if (!response.ok) throw new Error('Failed to remove item');
-      fetchUserCart(userId); // Обновляем данные после удаления
-    } catch (err) {
-      setError(err.message);
+      if (!response.ok) {
+        throw new Error(`Ошибка удаления: ${response.status}`);
+      }
+
+      await fetchCartItems();
+    } catch (error) {
+      console.error('Remove item error:', error);
+      setCartState(prev => ({
+        ...prev,
+        error: error.message,
+        isLoading: false
+      }));
     }
   };
 
+  useEffect(() => {
+    fetchCartItems();
+  }, []);
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      minimumFractionDigits: 0
+    }).format(price);
+  };
+
+  const calculateTotal = () => {
+    return cartState.items.reduce((total, item) => total + (item.price || 0), 0);
+  };
+
+  const CartItem = ({ item, onRemove }) => {
+    const [imageError, setImageError] = useState(false);
+
+    return (
+      <div className="cart-item">
+        <div className="cart-item-image">
+          {item.imageUrl && !imageError ? (
+            <img
+              src={item.imageUrl}
+              alt={item.productName}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="cart-image-placeholder">
+              <span>Нет изображения</span>
+            </div>
+          )}
+        </div>
+        
+        <div className="cart-item-details">
+          <h3 className="cart-item-title">{item.productName}</h3>
+          {item.variantName && <p className="cart-item-variant">Вариант: {item.variantName}</p>}
+          <p className="cart-item-price">{formatPrice(item.price)}</p>
+          <p className="cart-item-stock">Доступно: {item.availableCount} шт.</p>
+        </div>
+        
+        <button
+          className="cart-remove-btn"
+          onClick={() => onRemove(item.variantId)}
+          disabled={cartState.isLoading}
+        >
+          Удалить
+        </button>
+      </div>
+    );
+  };
+
+  if (cartState.isLoading) {
+    return (
+      <div className="cart-loading">
+        <div className="loading-spinner"></div>
+        <p>Загрузка корзины...</p>
+      </div>
+    );
+  }
+
+  if (cartState.error) {
+    return (
+      <div className="cart-error">
+        <h3>Произошла ошибка</h3>
+        <p>{cartState.error}</p>
+        <button 
+          className="retry-btn"
+          onClick={fetchCartItems}
+        >
+          Повторить попытку
+        </button>
+      </div>
+    );
+  }
+
+  if (cartState.isEmpty) {
+    return (
+      <div className="cart-empty">
+        <div className="empty-icon">🛒</div>
+        <h3>Ваша корзина пуста</h3>
+        <button 
+          className="catalog-btn"
+          onClick={() => navigate('/catalog')}
+        >
+          Перейти в каталог
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="cart-page">
-      <h1>My Shopping Cart</h1>
-      
-      <div className="user-id-section">
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          if (!userId) {
-            setError('Please enter user ID');
-            return;
-          }
-          localStorage.setItem('userId', userId);
-          fetchUserCart(userId);
-        }}>
-          <label>
-            User ID:
-            <input
-              type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="Enter your user ID"
-            />
-          </label>
-          <button type="submit">Load Cart</button>
-        </form>
+      <div className="cart-header">
+        <h1>Корзина</h1>
+        <span className="items-count">{cartState.items.length} товаров</span>
       </div>
+      
+      <div className="cart-content">
+        <div className="cart-items-list">
+          {cartState.items.map(item => (
+            <CartItem
+              key={item.variantId}
+              item={item}
+              onRemove={removeItem}
+            />
+          ))}
+        </div>
 
-      {error && <div className="error-message">{error}</div>}
-
-      {isLoading ? (
-        <div className="loading">Loading cart items...</div>
-      ) : cartItems.length > 0 ? (
-        <>
-          <div className="cart-items-container">
-            {cartItems.map((item) => (
-              <div key={item.variantId} className="cart-item">
-                <div className="item-image">
-                  <img 
-                    src={item.imageUrl || '/images/default-product.png'} 
-                    alt={item.variantName || 'Product'} 
-                  />
-                </div>
-                
-                <div className="item-details">
-                  <h3>{item.productName}</h3>
-                  <p className="variant-name">{item.variantName}</p>
-                  <p className="seller">Sold by: {item.sellerName}</p>
-                  <p className="price">Price: ${(item.price || 0).toFixed(2)}</p>
-                  <p className="stock">Available: {item.availableCount}</p>
-                </div>
-                
-                <div className="item-actions">
-                  <button 
-                    className="remove-btn"
-                    onClick={() => removeFromCart(item.variantId)}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ))}
+        <div className="cart-summary">
+          <h2>Итого</h2>
+          <div className="summary-row">
+            <span>Товары ({cartState.items.length})</span>
+            <span>{formatPrice(calculateTotal())}</span>
           </div>
-          
-          <div className="cart-summary">
-            <h3>Order Summary</h3>
-            <div className="summary-row">
-              <span>Subtotal:</span>
-              <span>${cartItems.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}</span>
-            </div>
-            <div className="summary-row">
-              <span>Shipping:</span>
-              <span>Free</span>
-            </div>
-            <div className="summary-row total">
-              <span>Total:</span>
-              <span>${cartItems.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}</span>
-            </div>
-            <button className="checkout-btn">Proceed to Checkout</button>
+          <div className="summary-row">
+            <span>Доставка</span>
+            <span>Бесплатно</span>
           </div>
-        </>
-      ) : (
-        !isLoading && <div className="empty-cart">Your cart is empty</div>
-      )}
+          <div className="summary-total">
+            <span>Общая сумма</span>
+            <span>{formatPrice(calculateTotal())}</span>
+          </div>
+          <button
+            className="checkout-btn"
+            onClick={() => navigate('/checkout')}
+          >
+            Оформить заказ
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

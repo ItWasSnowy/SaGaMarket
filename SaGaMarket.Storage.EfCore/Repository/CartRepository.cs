@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using SaGaMarket.Core.Entities;
 using SaGaMarket.Core.Storage.Repositories;
-using SaGaMarket.Infrastructure.Data;
+using SaGaMarket.Storage.EfCore;
 using System;
 
 public class CartRepository : ICartRepository

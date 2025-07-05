@@ -1,120 +1,165 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using SaGaMarket.Core.UseCases.OrderUseCases;
+using SaGaMarket.Identity;
+using SaGaMarket.Server.Identity;
 using System;
 using System.Threading.Tasks;
+using static CreateOrderUseCase;
+using static SaGaMarket.Core.UseCases.OrderUseCases.AddVariantToOrderFromCartUseCase;
+using static SaGaMarket.Core.UseCases.OrderUseCases.UpdateOrderUseCase;
 
-namespace SaGaMarket.Server.Controllers
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class OrderController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class OrderController : ControllerBase
+    private readonly CreateOrderUseCase _createOrderUseCase;
+    private readonly GetOrderUseCase _getOrderUseCase;
+    private readonly UpdateOrderUseCase _updateOrderUseCase;
+    private readonly DeleteOrderUseCase _deleteOrderUseCase;
+    private readonly AddVariantToOrderFromCartUseCase _addVariantToOrderFromCartUseCase;
+    private readonly UserManager<SaGaMarketIdentityUser> _userManager;
+
+    public OrderController(
+        AddVariantToOrderFromCartUseCase addVariantToOrderFromCartUseCase,
+        CreateOrderUseCase createOrderUseCase,
+        GetOrderUseCase getOrderUseCase,
+        UpdateOrderUseCase updateOrderUseCase,
+        DeleteOrderUseCase deleteOrderUseCase,
+        UserManager<SaGaMarketIdentityUser> userManager)
     {
-        private readonly CreateOrderUseCase _createOrderUseCase;
-        private readonly GetOrderUseCase _getOrderUseCase;
-        private readonly UpdateOrderUseCase _updateOrderUseCase;
-        private readonly DeleteOrderUseCase _deleteOrderUseCase;
-        private readonly AddVariantToOrderFromCartUseCase _addVariantToOrderFromCartUseCase;
+        _addVariantToOrderFromCartUseCase = addVariantToOrderFromCartUseCase;
+        _createOrderUseCase = createOrderUseCase;
+        _getOrderUseCase = getOrderUseCase;
+        _updateOrderUseCase = updateOrderUseCase;
+        _deleteOrderUseCase = deleteOrderUseCase;
+        _userManager = userManager;
+    }
 
-        public OrderController(
-            AddVariantToOrderFromCartUseCase addVariantToOrderFromCartUseCase,
-            CreateOrderUseCase createOrderUseCase,
-            GetOrderUseCase getOrderUseCase,
-            UpdateOrderUseCase updateOrderUseCase,
-            DeleteOrderUseCase deleteOrderUseCase)
+    [HttpPost]
+    [Authorize(Roles = "customer,seller,admin")]
+    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
+    {
+        try
         {
-            _addVariantToOrderFromCartUseCase = addVariantToOrderFromCartUseCase;
-            _createOrderUseCase = createOrderUseCase;
-            _getOrderUseCase = getOrderUseCase;
-            _updateOrderUseCase = updateOrderUseCase;
-            _deleteOrderUseCase = deleteOrderUseCase;
+            var customerId = Guid.Parse(_userManager.GetUserId(User));
+            var orderId = await _createOrderUseCase.Handle(request, customerId);
+            return Ok(new { OrderId = orderId });
         }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateOrder(
-       [FromBody] CreateOrderUseCase.CreateOrderRequest request, [FromQuery] Guid customerId)
+        catch (ArgumentException ex)
         {
-            try
-            {
- 
-                var orderId = await _createOrderUseCase.Handle(request, customerId);
-                return Ok(orderId);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            
+            return BadRequest(new { Error = ex.Message });
         }
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetOrderDetails(Guid id)
+        catch (Exception ex)
         {
+            return StatusCode(500, new { Error = "Internal server error" });
+        }
+    }
+
+    [HttpGet("{id}")]
+    [Authorize(Roles = "customer,seller,admin")]
+    public async Task<IActionResult> GetOrderDetails(Guid id)
+    {
+        try
+        {
+            var userId = Guid.Parse(_userManager.GetUserId(User));
             var order = await _getOrderUseCase.Execute(id);
+
             if (order == null)
-                return NotFound();
+                return NotFound(new { Error = "Order not found" });
+
+            // Проверка что пользователь имеет доступ к заказу
+            if (order.CustomerId != userId && !User.IsInRole("admin"))
+                return Forbid();
 
             return Ok(order);
         }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOrderUseCase.UpdateOrderRequest request, [FromQuery] Guid customerId)
+        catch (Exception ex)
         {
-            if (request == null)
-            {
-                return BadRequest("Invalid order data.");
-            }
-
-            try
-            {
-                await _updateOrderUseCase.Handle(id, request, customerId);
-                return NoContent();
-            }
-            catch (ArgumentException)
-            {
-                return NotFound();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "An error occurred while updating the order.");
-            }
+            return StatusCode(500, new { Error = "Internal server error" });
         }
+    }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id, [FromQuery] Guid customerId)
+    [HttpPut("{id}")]
+    [Authorize(Roles = "customer,seller,admin")]
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateOrderRequest request)
+    {
+        try
         {
-            try
-            {
-                await _deleteOrderUseCase.Handle(id, customerId);
-                return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "An error occurred while deleting the order.");
-            }
+            var userId = Guid.Parse(_userManager.GetUserId(User));
+            await _updateOrderUseCase.Handle(id, request, userId);
+            return Ok(new { Message = "Order updated successfully" });
         }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { Error = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = "Internal server error" });
+        }
+    }
 
-        [HttpPost("{orderId}/add-variant")]
-        public async Task<IActionResult> AddVariantToOrder([FromBody] AddVariantToOrderFromCartUseCase.AddVariantToOrderRequest request, [FromRoute] Guid orderId)
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "customer,seller,admin")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        try
         {
-            if (request == null)
-            {
-                return BadRequest("Invalid order item data.");
-            }
-            var orderItemId = await _addVariantToOrderFromCartUseCase.Handle(request, orderId);
-            return CreatedAtAction(nameof(GetOrderItem), new { id = orderItemId }, null);
+            var userId = Guid.Parse(_userManager.GetUserId(User));
+            await _deleteOrderUseCase.Handle(id, userId);
+            return Ok(new { Message = "Order deleted successfully" });
         }
-        [HttpGet]
-        public IActionResult GetOrderItem(Guid id)
+        catch (InvalidOperationException ex)
         {
-            return Ok();
+            return NotFound(new { Error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = "Internal server error" });
+        }
+    }
+
+    [HttpPost("{orderId}/add-variant")]
+    [Authorize(Roles = "customer,seller,admin")]
+    public async Task<IActionResult> AddVariantToOrder(
+    [FromBody] AddVariantToOrderRequest request,
+    [FromRoute] Guid orderId)
+    {
+        try
+        {
+            var userId = Guid.Parse(_userManager.GetUserId(User));
+            var orderItemId = await _addVariantToOrderFromCartUseCase.Handle(request, orderId, userId);
+
+            return Ok(new
+            {
+                OrderItemId = orderItemId,
+                Message = "Товар успешно добавлен в заказ"
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { Error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = "Внутренняя ошибка сервера" });
         }
     }
 }

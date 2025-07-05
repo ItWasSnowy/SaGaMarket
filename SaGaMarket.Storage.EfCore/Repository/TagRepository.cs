@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using SaGaMarket.Core.Entities;
 using SaGaMarket.Core.Storage.Repositories;
-using SaGaMarket.Infrastructure.Data;
 
 namespace SaGaMarket.Storage.EfCore.Repository
 {

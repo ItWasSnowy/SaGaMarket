@@ -21,8 +21,7 @@ public class Order
     public string TrackingNumber { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
 
-    [StringLength(20)]
-    public string OrderStatus { get; set; } = string.Empty;
+    public OrderStatus orderStatus { get; set; }
 
     // Навигационные свойства
     public User Customer { get; set; } = null!;
@@ -30,7 +29,17 @@ public class Order
     public List<OrderItem> OrderItems { get; set; } = new();
 
 }
-    
+
+public enum OrderStatus
+{
+    Processing,     // Заказ в обработке
+    Confirmed,     // Заказ подтвержден
+    Shipped,       // Заказ отправлен
+    Delivered,     // Заказ доставлен
+    Cancelled,     // Заказ отменен
+    Returned       // Заказ возвращен
+}
+
 public class OrderItem
 {
     public Guid OrderItemId { get; set; }
@@ -42,12 +51,12 @@ public class OrderItem
     public Order Order { get; set; } = null!;
     public Product Product { get; set; } = null!;
     public Variant Variant { get; set; } = null!;
+    public OrderItemStatus OrderStatus { get; set; }
 }
-public enum OrderStatus
+public enum OrderItemStatus
 {
-    Pending,
-    Processing,
-    Shipped,
-    Delivered,
-    Cancelled
+    Reserved,    // Товар зарезервирован
+    Confirmed,   // Оплата подтверждена
+    Shipped,     // Отправлен покупателю
+    Cancelled    // Отменен
 }

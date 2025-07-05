@@ -13,11 +13,11 @@ namespace SaGaMarket.Core.UseCases.CommentUseCases
         {
             _commentRepository = commentRepository;
         }
-        public async Task Handle(Guid commentId/*, Guid currentUserId*/)
+        public async Task Handle(Guid commentId, Guid currentUserId)
         {
             var c = await _commentRepository.Get(commentId);
             if (c is null) throw new InvalidOperationException("Comment not found");
-            //if (c.AuthorId != currentUserId) throw new InvalidOperationException("Is not the author");
+            if (c.AuthorId != currentUserId) throw new InvalidOperationException("Is not the author");
             await _commentRepository.Delete(commentId);
         }
     }

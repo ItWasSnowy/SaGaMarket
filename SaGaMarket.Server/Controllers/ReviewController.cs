@@ -1,122 +1,140 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using SaGaMarket.Core.UseCases.ReviewUseCases;
+using SaGaMarket.Identity;
+using SaGaMarket.Server.Identity;
 using System;
 using System.Threading.Tasks;
+using static SaGaMarket.Core.UseCases.ReviewUseCases.CreateReviewUseCase;
 
-namespace SaGaMarket.Server.Controllers
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class ReviewController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ReviewController : ControllerBase
+    private readonly CreateReviewUseCase _createReviewUseCase;
+    private readonly GetReviewUseCase _getReviewUseCase;
+    private readonly UpdateReviewUseCase _updateReviewUseCase;
+    private readonly DeleteReviewUseCase _deleteReviewUseCase;
+    private readonly GetAllReviewsOfOneProductUseCase _getAllReviewsOfOneProductUseCase;
+    private readonly UserManager<SaGaMarketIdentityUser> _userManager;
+
+    public ReviewController(
+        CreateReviewUseCase createReviewUseCase,
+        GetReviewUseCase getReviewUseCase,
+        UpdateReviewUseCase updateReviewUseCase,
+        GetAllReviewsOfOneProductUseCase getAllReviewsOfOneProductUseCase,
+        DeleteReviewUseCase deleteReviewUseCase,
+        UserManager<SaGaMarketIdentityUser> userManager)
     {
-        private readonly CreateReviewUseCase _createReviewUseCase;
-        private readonly GetReviewUseCase _getReviewUseCase;
-        private readonly UpdateReviewUseCase _updateReviewUseCase;
-        private readonly DeleteReviewUseCase _deleteReviewUseCase;
-        private readonly GetAllReviewsOfOneProductUseCase _getAllReviewsOfOneProductUseCase;
+        _createReviewUseCase = createReviewUseCase;
+        _getAllReviewsOfOneProductUseCase = getAllReviewsOfOneProductUseCase;
+        _getReviewUseCase = getReviewUseCase;
+        _updateReviewUseCase = updateReviewUseCase;
+        _deleteReviewUseCase = deleteReviewUseCase;
+        _userManager = userManager;
+    }
 
-        public ReviewController(
-            CreateReviewUseCase createReviewUseCase,
-            GetReviewUseCase getReviewUseCase,
-            UpdateReviewUseCase updateReviewUseCase,
-            GetAllReviewsOfOneProductUseCase getAllReviewsOfOneProductUseCase,
-            DeleteReviewUseCase deleteReviewUseCase)
+    [HttpPost]
+    [Authorize(Roles = "customer,seller,admin")]
+    public async Task<IActionResult> Create([FromBody] CreateReviewRequest request)
+    {
+        try
         {
-            _createReviewUseCase = createReviewUseCase;
-            _getAllReviewsOfOneProductUseCase = getAllReviewsOfOneProductUseCase;
-            _getReviewUseCase = getReviewUseCase;
-            _updateReviewUseCase = updateReviewUseCase;
-            _deleteReviewUseCase = deleteReviewUseCase;
+            var authorId = Guid.Parse(_userManager.GetUserId(User));
+            var reviewId = await _createReviewUseCase.Handle(request, authorId);
+            return Ok(new { ReviewId = reviewId });
         }
-
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateReviewUseCase.CreateReviewRequest request, [FromQuery] Guid authorId)
+        catch (InvalidOperationException ex)
         {
-            if (request == null)
-            {
-                return BadRequest("Invalid review data.");
-            }
-
-            try
-            {
-                var reviewId = await _createReviewUseCase.Handle(request, authorId);
-                return CreatedAtAction(nameof(Get), new { id = reviewId }, null);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message); 
-            }
-            
+            return Conflict(new { Error = ex.Message });
         }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = "Internal server error" });
+        }
+    }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
+    [HttpGet("{id}")]
+    [Authorize(Roles = "customer,seller,admin")]
+    public async Task<IActionResult> Get(Guid id)
+    {
+        try
         {
             var review = await _getReviewUseCase.Handle(id);
-            if (review == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(review);
+            return review == null
+                ? NotFound(new { Error = "Review not found" })
+                : Ok(review);
         }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] double newRating, [FromQuery] Guid authorId)
+        catch (Exception ex)
         {
-            try
-            {
-                await _updateReviewUseCase.Handle(id, newRating, authorId);
-                return NoContent();
-            }
-            catch (ArgumentException)
-            {
-                return NotFound();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "An error occurred while updating the review.");
-            }
+            return StatusCode(500, new { Error = "Internal server error" });
         }
+    }
 
-        [HttpGet("/api/products/{productId}/reviews")]
-        public async Task<IActionResult> GetAllProductReviews(Guid productId)
+    [HttpPut("{id}")]
+    [Authorize(Roles = "customer,seller,admin")]
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] double newRating)
+    {
+        try
         {
-            try
-            {
-                var reviews = await _getAllReviewsOfOneProductUseCase.Handle(productId);
-                return Ok(reviews);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return NotFound(ex.Message); // 404 если продукт не найден
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "Внутренняя ошибка сервера"); // 500 для других ошибок
-            }
+            var userId = Guid.Parse(_userManager.GetUserId(User));
+            await _updateReviewUseCase.Handle(id, newRating, userId);
+            return Ok(new { Message = "Review updated successfully" });
         }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id, [FromQuery] Guid authorId)
+        catch (ArgumentException ex)
         {
-            try
-            {
-                await _deleteReviewUseCase.Handle(id, authorId);
-                return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "An error occurred while deleting the review.");
-            }
+            return NotFound(new { Error = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = "Internal server error" });
+        }
+    }
+
+    [HttpGet("products/{productId}/reviews")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAllProductReviews(Guid productId)
+    {
+        try
+        {
+            var reviews = await _getAllReviewsOfOneProductUseCase.Handle(productId);
+            return Ok(reviews);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { Error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = "Internal server error" });
+        }
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "customer,seller,admin")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        try
+        {
+            var userId = Guid.Parse(_userManager.GetUserId(User));
+            await _deleteReviewUseCase.Handle(id, userId);
+            return Ok(new { Message = "Review deleted successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { Error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = "Internal server error" });
         }
     }
 }

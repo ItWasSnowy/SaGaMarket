@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using SaGaMarket.Core.Entities;
 using SaGaMarket.Core.Storage;
-using SaGaMarket.Infrastructure.Data;
+using SaGaMarket.Storage.EfCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;

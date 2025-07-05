@@ -10,6 +10,7 @@ public class CreateOrderUseCase
     private readonly IVariantRepository _variantRepository;
     private readonly ILogger<CreateOrderUseCase> _logger;
 
+
     public CreateOrderUseCase(
         IOrderRepository orderRepository,
         IProductRepository productRepository,
@@ -33,7 +34,7 @@ public class CreateOrderUseCase
             var order = new Order { CustomerId = customerId, TotalPrice = totalPrice, /*DiscountAmount = request.DiscountAmount,*/
                 FinalPrice = totalPrice /*- request.DiscountAmount*/, ShippingAddress = request.ShippingAddress.Trim(),
                 BillingAddress = (request.BillingAddress ?? request.ShippingAddress).Trim(),
-                PaymentMethod = request.PaymentMethod.Trim(), OrderStatus = OrderStatus.Processing.ToString(),
+                PaymentMethod = request.PaymentMethod.Trim(), orderStatus = OrderStatus.Processing,
                 Notes = request.Notes?.Trim(), OrderItems = orderItems };
 
             return await _orderRepository.Create(order);

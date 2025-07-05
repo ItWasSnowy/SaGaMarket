@@ -1,5 +1,4 @@
 ﻿using SaGaMarket.Core.Entities;
-using SaGaMarket.Infrastructure.Data;
 using SaGaMarket.Core.Storage.Repositories;
 using SaGaMarket.Core.Services;
 using System;
@@ -101,6 +100,44 @@ public class UserRepository : IUserRepository, IUserRoleService
             _logger.LogError(ex, "Error checking seller functionality for {UserId}", userId);
             throw;
         }
+    }
+
+   
+
+    public async Task<bool> IsAdmin(Guid userId)
+    {
+        var user = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserId == userId);
+
+        return user?.Role == Role.admin;
+    }
+
+    public async Task<bool> IsSeller(Guid userId)
+    {
+        var user = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserId == userId);
+
+        return user?.Role == Role.seller;
+    }
+
+    public async Task<bool> IsCustomer(Guid userId)
+    {
+        var user = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserId == userId);
+
+        return user?.Role == Role.customer;
+    }
+
+    public async Task<Role> GetUserRole(Guid userId)
+    {
+        var user = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserId == userId);
+
+        return user?.Role ?? Role.customer; // Возвращаем customer по умолчанию, если пользователь не найден
     }
 
 }

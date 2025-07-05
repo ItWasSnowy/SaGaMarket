@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace SaGaMarket.Infrastructure.Data
+namespace SaGaMarket.Storage.EfCore
 {
     public class SaGaMarketDbContext : DbContext
     {

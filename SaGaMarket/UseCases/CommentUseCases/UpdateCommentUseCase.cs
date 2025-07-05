@@ -14,7 +14,7 @@ namespace SaGaMarket.Core.UseCases
             _commentRepository = commentRepository;
         }
 
-        public async Task Handle(Guid commentId, string newCommentText/*, Guid currentUserId*/)
+        public async Task Handle(Guid commentId, string newCommentText, Guid currentUserId)
         {
             if (string.IsNullOrWhiteSpace(newCommentText))
                 throw new ArgumentException("Comment body cannot be empty");
@@ -23,8 +23,8 @@ namespace SaGaMarket.Core.UseCases
             if (existingComment == null)
                 throw new ArgumentException("Comment not found");
 
-            //if (existingComment.AuthorId != currentUserId)
-            //    throw new UnauthorizedAccessException("You can only update your own comments");
+            if (existingComment.AuthorId != currentUserId)
+                throw new UnauthorizedAccessException("You can only update your own comments");
 
             var updatedComment = new Comment
             {
