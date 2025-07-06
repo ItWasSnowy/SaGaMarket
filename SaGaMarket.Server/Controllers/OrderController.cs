@@ -5,6 +5,7 @@ using SaGaMarket.Core.UseCases.OrderUseCases;
 using SaGaMarket.Identity;
 using SaGaMarket.Server.Identity;
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using static CreateOrderUseCase;
 using static SaGaMarket.Core.UseCases.OrderUseCases.AddVariantToOrderFromCartUseCase;
@@ -21,9 +22,11 @@ public class OrderController : ControllerBase
     private readonly DeleteOrderUseCase _deleteOrderUseCase;
     private readonly AddVariantToOrderFromCartUseCase _addVariantToOrderFromCartUseCase;
     private readonly UserManager<SaGaMarketIdentityUser> _userManager;
+    private readonly GetAllOrdersOneUserUseCase _getAllOrdersOneUserUseCase;
 
     public OrderController(
         AddVariantToOrderFromCartUseCase addVariantToOrderFromCartUseCase,
+        GetAllOrdersOneUserUseCase getAllOrdersOneUserUseCase,
         CreateOrderUseCase createOrderUseCase,
         GetOrderUseCase getOrderUseCase,
         UpdateOrderUseCase updateOrderUseCase,
@@ -31,6 +34,7 @@ public class OrderController : ControllerBase
         UserManager<SaGaMarketIdentityUser> userManager)
     {
         _addVariantToOrderFromCartUseCase = addVariantToOrderFromCartUseCase;
+        _getAllOrdersOneUserUseCase = getAllOrdersOneUserUseCase;
         _createOrderUseCase = createOrderUseCase;
         _getOrderUseCase = getOrderUseCase;
         _updateOrderUseCase = updateOrderUseCase;
@@ -46,7 +50,7 @@ public class OrderController : ControllerBase
         {
             var customerId = Guid.Parse(_userManager.GetUserId(User));
             var orderId = await _createOrderUseCase.Handle(request, customerId);
-            return Ok(new { OrderId = orderId });
+            return Ok(new { OrderId = orderId, Message = "Заказ успешно создан" });
         }
         catch (ArgumentException ex)
         {
@@ -54,7 +58,7 @@ public class OrderController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { Error = "Internal server error" });
+            return StatusCode(500, new { Error = "Внутренняя ошибка сервера. Пожалуйста, попробуйте позже." });
         }
     }
 
@@ -156,6 +160,38 @@ public class OrderController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return Conflict(new { Error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = "Внутренняя ошибка сервера" });
+        }
+    }
+    [HttpGet("my-orders")]
+    [Authorize] // Требуется авторизация
+    public async Task<IActionResult> GetCurrentUserOrders()
+    {
+        try
+        {
+            // Получаем ID текущего авторизованного пользователя
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { Error = "Пользователь не идентифицирован" });
+            }
+
+            var currentUserId = Guid.Parse(userId);
+
+            // Получаем заказы только для текущего пользователя
+            var orders = await _getAllOrdersOneUserUseCase.Handle(currentUserId);
+            return Ok(orders);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { Error = ex.Message });
+        }
+        catch (FormatException)
+        {
+            return BadRequest(new { Error = "Неверный формат идентификатора пользователя" });
         }
         catch (Exception ex)
         {

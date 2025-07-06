@@ -43,6 +43,18 @@
   transition: var(--transition);
 }
 
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .hero-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+}
 .hero-button:hover {
   background-color: var(--secondary-color);
   transform: translateY(-2px);

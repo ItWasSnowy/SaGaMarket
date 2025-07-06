@@ -10,6 +10,6 @@ public interface IOrderRepository
     Task<Order?> Get(Guid orderId);
     Task<Guid> AddOrderItem(OrderItem orderItem);
     Task UpdateOrderTotal(Guid orderId, decimal amountToAdd);
-
+    Task<IEnumerable<Order>> GetAllForUser(Guid userId);
     Task<IDisposable> BeginTransactionAsync();
 }

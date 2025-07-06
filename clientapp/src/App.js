@@ -8,6 +8,7 @@ import Cart from './Pages/Cart';
 import Favorites from './Pages/Favorites';
 import AuthPage from './Pages/AuthPage';
 import ProfilePage from './Pages/ProfilePage';
+import OrdersPage from './Pages/OrdersPage'; // Добавляем импорт OrdersPage
 
 function AppContent() {
   const [cartItemsCount, setCartItemsCount] = useState(0);
@@ -41,6 +42,9 @@ function AppContent() {
                   Избранное {favoritesCount > 0 && `(${favoritesCount})`}
                 </Link>
               </li>
+              {hasUserData && (
+                <li><Link to="/orders">Мои заказы</Link></li>
+              )}
             </ul>
           </nav>
 
@@ -70,7 +74,7 @@ function AppContent() {
 
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home hasUserData={hasUserData} />} />
           <Route path="/catalog" element={<Catalog />} />
           <Route 
             path="/product/:productId" 
@@ -84,6 +88,7 @@ function AppContent() {
           <Route path="/cart" element={<Cart setCartItemsCount={setCartItemsCount} />} />
           <Route path="/favorites" element={<Favorites setFavoritesCount={setFavoritesCount} />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/orders" element={<OrdersPage />} />
           <Route path="/login" element={<AuthPage isLogin={true} />} />
           <Route path="/register" element={<AuthPage isLogin={false} />} />
         </Routes>

@@ -111,5 +111,13 @@ namespace SaGaMarket.Storage.EfCore.Repository
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+        public async Task<List<Variant>> GetByIds(List<Guid> ids)
+        {
+            return await _context.Variants
+                .Where(v => ids.Contains(v.VariantId))
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 }

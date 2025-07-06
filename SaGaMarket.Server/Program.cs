@@ -18,6 +18,8 @@ using SaGaMarket.Server.Identity;
 using SaGaMarket.Storage.EfCore.Repository;
 using TourGuide.Core.UseCases.TagUseCases;
 using SaGaMarket.Storage.EfCore;
+using SaGaMarket.Core.UseCases.CartUseCases;
+
 
 namespace SaGaMarket.Server
 {
@@ -128,12 +130,18 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<RemoveFromCartUseCase>();
             builder.Services.AddScoped<GetCartItemsInfoUseCase>();
             builder.Services.AddScoped<AddToFavoritesUseCase>();
+            builder.Services.AddScoped<GetAllOrdersOneUserUseCase>();
             builder.Services.AddScoped<RemoveFromFavoritesUseCase>();
             builder.Services.AddScoped<GetProductWithPagination>();
             builder.Services.AddScoped<ICartRepository, CartRepository>();
             builder.Services.AddScoped<IFavoritesRepository, FavoritesRepository>();
             builder.Services.AddScoped<GetUserFavoritesUseCase>();
             builder.Services.AddScoped<GetProductsInfoUseCase>();
+            builder.Services.AddScoped<ClearCartUseCase>();
+            //------------------------------
+            builder.Services.AddHttpClient(); // Äëÿ IHttpClientFactory
+            builder.Services.AddScoped<IPaymentService, YooKassaPaymentService>();
+            builder.Services.AddScoped<YooKassaPaymentService>();
 
             // Configure CORS
             builder.Services.AddCors(options =>

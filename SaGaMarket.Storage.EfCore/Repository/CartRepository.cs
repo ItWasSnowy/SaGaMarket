@@ -44,4 +44,14 @@ public class CartRepository : ICartRepository
         return user?.ProductFromCartIds ?? new List<Guid>();
     }
 
+    public async Task ClearCartAsync(Guid userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user != null)
+        {
+            user.ProductFromCartIds.Clear();
+            await _context.SaveChangesAsync();
+        }
+    }
+
 }

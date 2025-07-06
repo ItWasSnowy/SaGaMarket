@@ -2,16 +2,24 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import './Home.css';
 
-function Home() {
+
+const Home = ({ hasUserData }) => {
   return (
     <div className="home-page">
       <section className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title">Добро пожаловать в наш магазин</h1>
-          <p className="hero-subtitle">Откройте для себя лучшие товары по выгодным ценам</p>
-          <Link to="/catalog" className="hero-button">
-            Перейти в каталог
-          </Link>
+          <p className="hero-subtitle">Лучшие товары по доступным ценам</p>
+          <div className="hero-buttons">
+            <Link to="/catalog" className="hero-button">
+              Перейти в каталог
+            </Link>
+            {hasUserData && (
+              <Link to="/orders" className="hero-button">
+                Мои заказы
+              </Link>
+            )}
+          </div>
         </div>
       </section>
 

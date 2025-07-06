@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SaGaMarket.Core.Entities;
 using SaGaMarket.Core.UseCases;
+using SaGaMarket.Core.UseCases.CartUseCases;
 using SaGaMarket.Identity;
 using SaGaMarket.Server.Identity;
 using System;
@@ -23,8 +24,10 @@ public class CartController : ControllerBase
     private readonly GetCartItemsInfoUseCase _getCartItemsInfoUseCase;
     private readonly ILogger<CartController> _logger;
     private readonly UserManager<SaGaMarketIdentityUser> _userManager;
+    private readonly ClearCartUseCase _clearCartUseCase;
 
     public CartController(
+        ClearCartUseCase clearCartUseCase,
         AddToCartUseCase addToCartUseCase,
         GetCartItemsInfoUseCase getCartItemsInfoUseCase,
         GetUserCartUseCase getUserCartUseCase,
@@ -33,6 +36,7 @@ public class CartController : ControllerBase
         ILogger<CartController> logger,
         UserManager<SaGaMarketIdentityUser> userManager)
     {
+        _clearCartUseCase = clearCartUseCase;
         _addToCartUseCase = addToCartUseCase;
         _removeFromCartUseCase = removeFromCartUseCase;
         _getUserRoleUseCase = getUserRoleUseCase;
@@ -168,6 +172,21 @@ public class CartController : ControllerBase
         {
             _logger.LogError(ex, "Ошибка при удалении из корзины для пользователя {User Id}", userId);
             return StatusCode(500, new { Error = "Внутренняя ошибка сервера" });
+        }
+    }
+    [HttpPost("clear")]
+    [Authorize(Roles = "customer,seller,admin")]
+    public async Task<IActionResult> ClearCart()
+    {
+        try
+        {
+            var userId = Guid.Parse(_userManager.GetUserId(User));
+            await _clearCartUseCase.Handle(userId);
+            return Ok(new { Message = "Корзина успешно очищена" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = "Internal server error" });
         }
     }
 }

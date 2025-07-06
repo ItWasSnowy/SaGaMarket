@@ -17,22 +17,21 @@ public class OrderRepository : IOrderRepository
 
     public async Task<Guid> Create(Order order)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync();
-
         try
         {
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
+            _logger.LogDebug("Добавление заказа в контекст");
+            await _context.Orders.AddAsync(order);
 
-            _logger.LogInformation("Order created with ID: {OrderId}", order.OrderId);
+            _logger.LogDebug("Сохранение изменений");
+            await _context.SaveChangesAsync();
+
+            _logger.LogDebug("Заказ сохранен, ID: {OrderId}", order.OrderId);
             return order.OrderId;
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error creating order");
-            throw new DbUpdateException("Failed to create order", ex);
+            _logger.LogError(ex, "Ошибка при сохранении заказа");
+            throw;
         }
     }
 
@@ -123,6 +122,19 @@ public class OrderRepository : IOrderRepository
     public async Task<IDisposable> BeginTransactionAsync()
     {
         return await _context.Database.BeginTransactionAsync();
+    }
+
+    public async Task<IEnumerable<Order>> GetAllForUser(Guid userId)
+    {
+        return await _context.Orders
+            .Where(o => o.CustomerId == userId)
+            .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.Product)
+            .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.Variant)
+            .OrderByDescending(o => o.OrderDate)
+            .AsNoTracking()
+            .ToListAsync();
     }
 
 }
