@@ -117,36 +117,41 @@ public class AccountController : ControllerBase
         return Ok(new { Message = "Logout successful" });
     }
 
-    [Authorize]
-    [HttpGet("profile")]
-    public async Task<IActionResult> GetProfile()
+    
+    [HttpGet("profile/{userId}")]
+    public async Task<IActionResult> GetProfile(string userId)
     {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-            return NotFound("User not found");
+        // Проверка, что текущий пользователь совпадает с переданным userId
+        var currentUser = await _userManager.GetUserAsync(User);
+        if (currentUser == null)
+            return NotFound("User  not found");
+
+        if (currentUser.Id.ToString() != userId)
+            return Forbid("You do not have permission to access this profile");
 
         var dbUser = await _context.Users
             .Include(u => u.ProductsForSale)
             .Include(u => u.Orders)
-            .FirstOrDefaultAsync(u => u.UserId == user.Id);
+            .FirstOrDefaultAsync(u => u.UserId.ToString() == userId);
 
         if (dbUser == null)
-            return NotFound("User data not found");
+            return NotFound("User  data not found");
 
-        var roles = await _userManager.GetRolesAsync(user);
+        var roles = await _userManager.GetRolesAsync(currentUser);
 
         return Ok(new UserProfileDto
         {
-            UserId = user.Id,
-            Email = user.Email,
-            UserName = user.UserName,
-            ProfilePhotoUrl = user.ProfilePhotoUrl,
+            UserId = currentUser.Id,
+            Email = currentUser.Email,
+            UserName = currentUser.UserName,
+            ProfilePhotoUrl = currentUser.ProfilePhotoUrl,
             Role = dbUser.Role.ToString(),
             ProductsForSaleCount = dbUser.ProductsForSale?.Count ?? 0,
             OrdersCount = dbUser.Orders?.Count ?? 0,
-            CreatedAt = user.CreatedAt
+            CreatedAt = currentUser.CreatedAt
         });
     }
+
 
     [Authorize(Roles = "admin")]
     [HttpPost("assign-role")]
@@ -178,6 +183,98 @@ public class AccountController : ControllerBase
         }
 
         return Ok(new { Message = $"Role {role} assigned successfully" });
+    }
+
+    [HttpGet("{userId}")]
+    public async Task<IActionResult> GetUserById(string userId)
+    {
+        // Преобразуем userId в Guid
+        if (!Guid.TryParse(userId, out Guid userGuid))
+        {
+            return BadRequest("Invalid user ID format.");
+        }
+
+        // Получаем пользователя по ID
+        var user = await _context.Users.FindAsync(userGuid);
+        if (user == null)
+        {
+            return NotFound("User  not found");
+        }
+
+        // Получаем информацию о текущем авторизованном пользователе
+        var identityUser = await _userManager.FindByIdAsync(userId);
+        if (identityUser == null)
+        {
+            return NotFound("Identity user not found");
+        }
+
+        // Формируем ответ
+        var response = new
+        {
+            UserId = identityUser.Id,
+            Username = identityUser.UserName,
+            Email = identityUser.Email,
+            EmailConfirmed = identityUser.EmailConfirmed,
+            PhoneNumber = identityUser.PhoneNumber,
+            // Добавляем поля из вашей сущности User
+            ProductsForSaleCount = user.ProductsForSale?.Count ?? 0,
+            CommentsCount = user.Comments?.Count ?? 0,
+            Role = user.Role,
+            OrderCount = user.Orders?.Count ?? 0,
+            // Добавляем фото профиля
+            ProfilePhotoUrl = identityUser.ProfilePhotoUrl ?? "/default-profile.png"
+        };
+
+        return Ok(response);
+    }
+
+
+    [HttpGet]
+    public async Task<IActionResult> GetUserProfile()
+    {
+        // Получаем текущего авторизованного пользователя
+        var identityUser = await _userManager.GetUserAsync(User);
+        if (identityUser == null)
+        {
+            return NotFound("User not found");
+        }
+
+        // Получаем дополнительную информацию из вашей сущности User
+        var user = await _context.Users.FindAsync(identityUser.Id);
+        if (user == null)
+        {
+            return NotFound("Additional user data not found");
+        }
+
+        // Формируем ответ
+        var response = new
+        {
+            UserId = identityUser.Id,
+            Username = identityUser.UserName,
+            Email = identityUser.Email,
+            EmailConfirmed = identityUser.EmailConfirmed,
+            PhoneNumber = identityUser.PhoneNumber,
+            // Добавляем поля из вашей сущности User
+            ProductsForSaleCount = user.ProductsForSale?.Count ?? 0,
+            CommentsCount = user.Comments?.Count ?? 0,
+            Role = user.Role,
+            OrderCount = user.Orders?.Count ?? 0,
+            // Добавляем фото профиля (предполагаем, что оно хранится в Identity или в вашей сущности)
+            ProfilePhotoUrl = identityUser.ProfilePhotoUrl ?? "/default-profile.png"
+        };
+
+        return Ok(response);
+    }
+    [HttpPost]
+    public IActionResult Authenticated()
+    {
+        if (User.Identity == null || !User.Identity.IsAuthenticated)
+        {
+            return Ok(new { IsAuthenticated = false, UserId = (string?)null });
+        }
+
+        var userId = _userManager.GetUserId(User);
+        return Ok(new { IsAuthenticated = true, UserId = userId });
     }
 }
 

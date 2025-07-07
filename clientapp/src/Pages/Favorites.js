@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../authContext';
 import './Favorites.css';
 
 function Favorites({ setFavoritesCount }) {
@@ -7,20 +8,13 @@ function Favorites({ setFavoritesCount }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-
-  const getCurrentUser = () => {
-    const userData = localStorage.getItem('userData');
-    if (!userData) {
-      navigate('/login');
-      return null;
-    }
-    return JSON.parse(userData);
-  };
+  const { user } = useAuth();
 
   const fetchVariantsForProduct = async (productId) => {
     try {
       const response = await fetch(
-        `https://localhost:7182/api/products/${productId}/variants`
+        `https://localhost:7182/api/products/${productId}/variants`,
+        { credentials: 'include' }
       );
       if (!response.ok) throw new Error(`Не удалось загрузить варианты для товара ${productId}`);
       return await response.json();
@@ -30,15 +24,8 @@ function Favorites({ setFavoritesCount }) {
     }
   };
 
-  // Функция для обработки ошибок загрузки изображений
-  const handleImageError = (e) => {
-    // Просто скрываем изображение при ошибке
-    e.target.style.display = 'none';
-  };
-
   const fetchUserFavorites = async () => {
-    const user = getCurrentUser();
-    if (!user?.userId) return;
+    if (!user) return;
 
     try {
       setIsLoading(true);
@@ -46,13 +33,10 @@ function Favorites({ setFavoritesCount }) {
       
       const favoritesResponse = await fetch(
         `https://localhost:7182/api/favorites/items?userId=${user.userId}`,
-        {
-          credentials: 'include'
-        }
+        { credentials: 'include' }
       );
       
       if (favoritesResponse.status === 401) {
-        localStorage.removeItem('userData');
         navigate('/login');
         return;
       }
@@ -61,10 +45,6 @@ function Favorites({ setFavoritesCount }) {
       
       const productIds = await favoritesResponse.json();
       
-      if (!Array.isArray(productIds)) {
-        throw new Error('Некорректный формат данных избранного');
-      }
-
       if (setFavoritesCount) {
         setFavoritesCount(productIds.length);
       }
@@ -77,9 +57,7 @@ function Favorites({ setFavoritesCount }) {
       const queryParams = productIds.map(id => `productIds=${encodeURIComponent(id)}`).join('&');
       const productsResponse = await fetch(
         `https://localhost:7182/api/favorites/info?${queryParams}`,
-        {
-          credentials: 'include'
-        }
+        { credentials: 'include' }
       );
       
       if (!productsResponse.ok) throw new Error('Не удалось загрузить информацию о товарах');
@@ -101,12 +79,9 @@ function Favorites({ setFavoritesCount }) {
               : `${minPrice} - ${maxPrice} ₽`;
           }
 
-          const variantNames = variants.map(v => v.name).join(', ');
-
           return {
             ...product,
             priceRange,
-            variantNames,
             variants
           };
         })
@@ -125,8 +100,7 @@ function Favorites({ setFavoritesCount }) {
   };
 
   const removeFromFavorites = async (productId) => {
-    const user = getCurrentUser();
-    if (!user?.userId) return;
+    if (!user) return;
 
     try {
       const response = await fetch(
@@ -142,7 +116,6 @@ function Favorites({ setFavoritesCount }) {
       );
 
       if (response.status === 401) {
-        localStorage.removeItem('userData');
         navigate('/login');
         return;
       }
@@ -153,7 +126,6 @@ function Favorites({ setFavoritesCount }) {
       }
       
       await fetchUserFavorites();
-      
     } catch (err) {
       console.error('Ошибка при удалении из избранного:', err);
       setError(err.message);
@@ -162,7 +134,7 @@ function Favorites({ setFavoritesCount }) {
 
   useEffect(() => {
     fetchUserFavorites();
-  }, []);
+  }, [user]);
 
   return (
     <div className="favorites-page">
@@ -184,7 +156,7 @@ function Favorites({ setFavoritesCount }) {
                   <img 
                     src={product.imageUrl} 
                     alt={product.name}
-                    onError={handleImageError}
+                    onError={(e) => e.target.style.display = 'none'}
                   />
                 )}
               </div>

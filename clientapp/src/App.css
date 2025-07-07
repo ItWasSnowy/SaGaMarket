@@ -1,29 +1,4 @@
-:root {
-  --primary-color: #4361ee;
-  --secondary-color: #3f37c9;
-  --accent-color: #4cc9f0;
-  --light-color: #f8f9fa;
-  --dark-color: #212529;
-  --success-color: #4bb543;
-  --danger-color: #ff3333;
-  --border-radius: 8px;
-  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s ease;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-body {
-  background-color: #f5f7fa;
-  color: var(--dark-color);
-  line-height: 1.6;
-}
-
+/* src/App.css */
 .App {
   display: flex;
   flex-direction: column;
@@ -31,69 +6,38 @@ body {
 }
 
 .site-header {
-  background-color: white;
-  box-shadow: var(--box-shadow);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  padding: 1rem 0;
+  background-color: #282c34;
+  padding: 1rem;
+  color: white;
 }
 
 .header-content {
-  width: 90%;
-  max-width: 1200px;
-  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .logo {
-  color: var(--primary-color);
-  font-size: 1.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: var(--transition);
+  margin: 0;
+  font-size: 1.5rem;
 }
 
-.logo:hover {
-  color: var(--secondary-color);
+.logo a {
+  color: white;
+  text-decoration: none;
 }
 
-.main-nav ul {
+.main-nav {
   display: flex;
-  list-style: none;
   gap: 1.5rem;
 }
 
 .main-nav a {
+  color: white;
   text-decoration: none;
-  color: var(--dark-color);
   font-weight: 500;
-  padding: 0.5rem 0;
-  position: relative;
-  transition: var(--transition);
-}
-
-.main-nav a:hover {
-  color: var(--primary-color);
-}
-
-.main-nav a::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background-color: var(--primary-color);
-  transition: var(--transition);
-}
-
-.main-nav a:hover::after {
-  width: 100%;
 }
 
 .user-actions {
@@ -101,103 +45,41 @@ body {
   gap: 1rem;
 }
 
-button {
-  cursor: pointer;
-  border: none;
-  border-radius: var(--border-radius);
+.user-actions button {
   padding: 0.5rem 1rem;
-  font-weight: 500;
-  transition: var(--transition);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-.login-btn, .register-btn {
-  background-color: var(--primary-color);
+.login-btn {
+  background-color: #61dafb;
+}
+
+.register-btn {
+  background-color: #4CAF50;
   color: white;
-}
-
-.login-btn:hover, .register-btn:hover {
-  background-color: var(--secondary-color);
 }
 
 .profile-btn {
-  background-color: var(--light-color);
-  color: var(--dark-color);
-}
-
-.profile-btn:hover {
-  background-color: #e9ecef;
+  background-color: #ff9800;
+  color: white;
 }
 
 .logout-btn {
-  background-color: var(--danger-color);
+  background-color: #f44336;
   color: white;
-}
-
-.logout-btn:hover {
-  opacity: 0.9;
-}
-
-main {
-  flex: 1;
-  width: 90%;
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 1rem;
 }
 
 .site-footer {
-  background-color: var(--dark-color);
+  background-color: #282c34;
   color: white;
-  text-align: center;
-  padding: 1.5rem 0;
+  padding: 1rem;
   margin-top: auto;
 }
 
 .footer-content {
-  width: 90%;
   max-width: 1200px;
   margin: 0 auto;
-}
-
-.loading {
   text-align: center;
-  font-size: 1.2rem;
-  color: var(--primary-color);
-  margin: 2rem 0;
-}
-
-.error-message {
-  background-color: #ffeeee;
-  color: var(--danger-color);
-  padding: 1rem;
-  border-radius: var(--border-radius);
-  margin-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.error-message button {
-  background-color: var(--danger-color);
-  color: white;
-}
-
-.error-message button:hover {
-  background-color: #e60000;
-}
-
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-  }
-  
-  .main-nav ul {
-    gap: 1rem;
-  }
-  
-  .user-actions {
-    width: 100%;
-    justify-content: center;
-  }
 }

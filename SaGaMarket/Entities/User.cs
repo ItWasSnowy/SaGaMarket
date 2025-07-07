@@ -32,6 +32,7 @@ public class User
     public List<Review> Reviews { get; set; } = new();
     public List<Order> Orders { get; set; } = new();
     public List<Product> ProductsForSale { get; set; } = new();
+   
 
     public User() { }
 

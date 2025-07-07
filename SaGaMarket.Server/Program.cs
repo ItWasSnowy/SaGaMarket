@@ -142,6 +142,7 @@ namespace SaGaMarket.Server
             builder.Services.AddHttpClient(); // Äëÿ IHttpClientFactory
             builder.Services.AddScoped<IPaymentService, YooKassaPaymentService>();
             builder.Services.AddScoped<YooKassaPaymentService>();
+            
 
             // Configure CORS
             builder.Services.AddCors(options =>
@@ -199,19 +200,19 @@ namespace SaGaMarket.Server
                         EmailConfirmed = true
                     };
 
-                    var result = await userManager.CreateAsync(adminUser, "Admin123!");
-                    if (result.Succeeded)
-                    {
-                        await userManager.AddToRoleAsync(adminUser, "admin");
+                    //var result = await userManager.CreateAsync(adminUser, "Admin123!");
+                    //if (result.Succeeded)
+                    //{
+                    //    await userManager.AddToRoleAsync(adminUser, "admin");
 
-                        // Create corresponding user in main database
-                        context.Users.Add(new Core.Entities.User
-                        {
-                            UserId = adminUser.Id,
-                            Role = Core.Entities.Role.admin
-                        });
-                        await context.SaveChangesAsync();
-                    }
+                    //    // Create corresponding user in main database
+                    //    context.Users.Add(new Core.Entities.User
+                    //    {
+                    //        UserId = adminUser.Id,
+                    //        Role = Core.Entities.Role.admin
+                    //    });
+                    //    await context.SaveChangesAsync();
+                    //}
                 }
             }
 

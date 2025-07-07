@@ -140,6 +140,8 @@ public class UserRepository : IUserRepository, IUserRoleService
         return user?.Role ?? Role.customer; // Возвращаем customer по умолчанию, если пользователь не найден
     }
 
+    
+
 }
 
 

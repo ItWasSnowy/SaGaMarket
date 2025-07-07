@@ -4,7 +4,7 @@ import './Cart.css';
 
 const API_BASE = 'https://localhost:7182/api';
 
-function Cart({ setCartItemsCount }) {
+function Cart({ setCartItemsCount = () => {} }) {
   const [state, setState] = useState({
     items: [],
     isLoading: true,
