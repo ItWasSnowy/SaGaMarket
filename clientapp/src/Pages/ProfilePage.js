@@ -54,11 +54,12 @@ const ProfilePage = () => {
   };
 
   const handleViewProducts = () => {
-    navigate('/my-products');
+    navigate(`/my-products/${userData.userId}`);
   };
 
   const handleCreateProduct = () => {
-    navigate('/create-product');
+     console.log('Кнопка "Создать товар" нажата');
+    navigate('/create-product'); // Это перенаправление на страницу создания товара
   };
 
   if (loading) return <div className="loading">Загрузка профиля...</div>;
@@ -117,9 +118,9 @@ const ProfilePage = () => {
         <div className="actions">
           <button 
             onClick={handleViewProducts}
-            className={`btn ${userData.productsForSaleCount === 0 ? 'disabled' : ''}`}
+            className={`btn`}
           >
-            Мои товары ({userData.productsForSaleCount})
+            Мои товары 
           </button>
           <button 
             onClick={handleCreateProduct}

@@ -270,7 +270,7 @@ public class AccountController : ControllerBase
     {
         if (User.Identity == null || !User.Identity.IsAuthenticated)
         {
-            return Ok(new { IsAuthenticated = false, UserId = (string?)null });
+            return Ok(new { IsAuthenticated = false,  UserId = (string?)null });
         }
 
         var userId = _userManager.GetUserId(User);

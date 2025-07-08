@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = useCallback(async () => {
     try {
-      const response = await axios.post('https://localhost:7182/api/Account', {
+      const response = await axios.get('https://localhost:7182/api/Account', {
         withCredentials: true
       });
       setUser(response.data);
@@ -26,28 +26,22 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async (credentials) => {
   try {
-    // 1. Отправляем запрос на вход
-    await axios.post('https://localhost:7182/api/Account/login', credentials, {
+    const response = await axios.post('https://localhost:7182/api/Account/login', credentials, {
       withCredentials: true
     });
     
-    // 2. Делаем небольшую задержку для установки кук
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // 3. Проверяем аутентификацию
+    // Добавьте эту проверку
     const userData = await checkAuth();
+    if (!userData) throw new Error('Не удалось получить данные пользователя');
     
-    if (userData) {
-      navigate('/');
-      return { success: true, user: userData };
-    }
-    
-    throw new Error('Ошибка аутентификации: пользователь не получен');
+    setUser(userData); // Важно сохранить ВСЕ данные пользователя
+    navigate('/');
+    return { success: true, user: userData };
   } catch (error) {
     console.error('Login error:', error);
     return { 
       success: false, 
-      message: error.response?.data?.message || error.message || 'Ошибка входа' 
+      message: error.response?.data?.message || 'Ошибка входа' 
     };
   }
 }, [checkAuth, navigate]);

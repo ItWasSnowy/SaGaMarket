@@ -10,7 +10,9 @@ import Favorites from './Pages/Favorites';
 import ProfilePage from './Pages/ProfilePage';
 import OrdersPage from './Pages/OrdersPage';
 import AuthPage from './Pages/AuthPage';
-import ProtectedRoute from './Components/ProtectedRoute';
+import CreateProduct from './Pages/CreateProduct';
+import ProtectedRoute from './Components/ProtectedRoute'
+import MyProductsPage from './Pages/MyProductsPage';
 
 function App() {
   return (
@@ -43,6 +45,19 @@ function App() {
           
           <Route path="/login" element={<AuthPage isLogin={true} />} />
           <Route path="/register" element={<AuthPage isLogin={false} />} />
+          <Route path="/create-product" element={
+  <ProtectedRoute allowedRoles={[1]}> {/* 1 = seller */}
+    <CreateProduct />
+  </ProtectedRoute>
+} />
+<Route 
+  path="/my-products/:sellerId" 
+  element={
+    <ProtectedRoute allowedRoles={[1]}>
+      <MyProductsPage />
+    </ProtectedRoute>
+  } 
+/>
         </Routes>
       </AuthProvider>
     </BrowserRouter>

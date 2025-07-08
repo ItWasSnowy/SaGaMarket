@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SaGaMarket.Core.UseCases.ProductUseCases;
 using SaGaMarket.Core.UseCases.ReviewUseCases;
 using SaGaMarket.Identity;
 using SaGaMarket.Server.Identity;
+using SaGaMarket.Storage.EfCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,9 +27,11 @@ namespace SaGaMarket.Server.Controllers
         private readonly GetProductWithPagination _getProductWithPagination;
         private readonly GetProductsRatingsUseCase _getProductsRatingsUseCase;
         private readonly UserManager<SaGaMarketIdentityUser> _userManager;
+        private readonly SaGaMarketDbContext _context;
         private readonly ILogger<ProductController> _logger;
 
         public ProductController(
+            SaGaMarketDbContext context,
             CreateProductUseCase createProductUseCase,
             GetProductUseCase getProductUseCase,
             UpdateProductUseCase updateProductUseCase,
@@ -37,6 +41,7 @@ namespace SaGaMarket.Server.Controllers
             UserManager<SaGaMarketIdentityUser> userManager,
             ILogger<ProductController> logger)
         {
+            _context = context;
             _createProductUseCase = createProductUseCase;
             _getProductUseCase = getProductUseCase;
             _getProductWithPagination = getProductWithPagination;
@@ -199,6 +204,16 @@ namespace SaGaMarket.Server.Controllers
                 _logger.LogError(ex, "Error deleting product {ProductId}", id);
                 return StatusCode(500, new { Error = "Internal server error" });
             }
+        }
+        // Пример для ASP.NET Core
+        [HttpGet("api/Products")]
+        public IActionResult GetProductsBySeller([FromQuery] string sellerId)
+        {
+            var products = _context.Products
+                .Where(p => p.SellerId.ToString() == sellerId)
+                .ToList();
+
+            return Ok(products);
         }
     }
 }
