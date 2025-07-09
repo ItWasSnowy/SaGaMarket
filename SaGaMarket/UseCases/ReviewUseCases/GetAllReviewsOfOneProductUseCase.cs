@@ -40,7 +40,8 @@ namespace SaGaMarket.Core.UseCases.ReviewUseCases
                 UserRating = r.UserRating,
                 CommentIds = r.CommentIds,
                 AuthorId = r.AuthorId,
-                CreatedAt = r.CreatedAt
+                CreatedAt = r.CreatedAt,
+                TextReview = r.TextReview
             });
         }
 
@@ -48,6 +49,7 @@ namespace SaGaMarket.Core.UseCases.ReviewUseCases
         {
             public Guid ReviewId { get; set; }
             public Guid ProductId { get; set; }
+            public string TextReview { get; set; }
             public double UserRating { get; set; }
             public List<Guid> CommentIds { get; set; } = new();
             public Guid AuthorId { get; set; }

@@ -7,6 +7,7 @@ public class Review
     public Guid ReviewId { get; set; }
     public Guid ProductId { get; set; }
     public double UserRating { get; set; }
+    public string TextReview { get; set; }
     public List<Guid> CommentIds { get; set; } = [];
     public Guid AuthorId { get; set; }
     public User Author { get; set; }

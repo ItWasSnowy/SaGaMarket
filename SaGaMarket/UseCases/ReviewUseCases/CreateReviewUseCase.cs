@@ -28,6 +28,7 @@ namespace SaGaMarket.Core.UseCases.ReviewUseCases
                 ProductId = request.ProductId,
                 UserRating = request.UserRating,
                 AuthorId = authorId,
+                TextReview = request.TextReview,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -37,6 +38,7 @@ namespace SaGaMarket.Core.UseCases.ReviewUseCases
         public class CreateReviewRequest
         {
             public Guid ProductId { get; set; }
+            public string? TextReview { get; set; }
             public double UserRating { get; set; }
         }
     }

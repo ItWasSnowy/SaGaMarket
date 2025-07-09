@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SaGaMarket.Core.Dtos;
 using SaGaMarket.Core.UseCases.ProductUseCases;
 using SaGaMarket.Core.UseCases.ReviewUseCases;
 using SaGaMarket.Identity;
 using SaGaMarket.Server.Identity;
 using SaGaMarket.Storage.EfCore;
+using SaGaMarket.Storage.EfCore.Repository;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -29,8 +31,10 @@ namespace SaGaMarket.Server.Controllers
         private readonly UserManager<SaGaMarketIdentityUser> _userManager;
         private readonly SaGaMarketDbContext _context;
         private readonly ILogger<ProductController> _logger;
+        private readonly ProductRepository _productRepository;
 
         public ProductController(
+            ProductRepository productRepository,
             SaGaMarketDbContext context,
             CreateProductUseCase createProductUseCase,
             GetProductUseCase getProductUseCase,
@@ -41,6 +45,7 @@ namespace SaGaMarket.Server.Controllers
             UserManager<SaGaMarketIdentityUser> userManager,
             ILogger<ProductController> logger)
         {
+            _productRepository = productRepository;
             _context = context;
             _createProductUseCase = createProductUseCase;
             _getProductUseCase = getProductUseCase;
@@ -122,6 +127,55 @@ namespace SaGaMarket.Server.Controllers
             }
         }
 
+        //[HttpGet("categories")]
+        //public async Task<IActionResult> GetCategories()
+        //{
+        //    try
+        //    {
+        //        var categories = await _productRepository.GetCategories();
+        //        return Ok(categories);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error getting categories");
+        //        return StatusCode(500, "Internal server error");
+        //    }
+        //}
+
+        [HttpGet("filtered")]
+        public async Task<IActionResult> GetFilteredProducts(
+    [FromQuery] string? category,
+    [FromQuery] double? minRating,
+    [FromQuery] string? searchTerm,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 12)
+        {
+            try
+            {
+                var products = await _productRepository.GetFilteredProducts(
+                    category, minRating, searchTerm, page, pageSize);
+
+                var totalCount = await _productRepository.GetFilteredProductsCount(
+                    category, minRating, searchTerm);
+
+                Response.Headers.Append("X-Total-Count", totalCount.ToString());
+
+                // Включаем связанные данные (варианты и отзывы)
+                var productsWithDetails = await _context.Products
+                    .Include(p => p.Variants)
+                    .Include(p => p.Reviews)
+                    .Where(p => products.Select(prod => prod.ProductId).Contains(p.ProductId))
+                    .ToListAsync();
+
+                return Ok(productsWithDetails.Select(p => new ProductDto(p)));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting filtered products");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
         [HttpPut("{id}")]
         [Authorize(Roles = "seller,admin")]
         public async Task<IActionResult> Update(
@@ -149,6 +203,22 @@ namespace SaGaMarket.Server.Controllers
             {
                 _logger.LogError(ex, "Error updating product {ProductId}", id);
                 return StatusCode(500, new { Error = "Internal server error" });
+            }
+        }
+
+
+        [HttpGet("categories")]
+        public async Task<IActionResult> GetAllCategories()
+        {
+            try
+            {
+                var categories = await _productRepository.GetAllCategoriesAsync();
+                return Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting categories");
+                return StatusCode(500, "Internal server error");
             }
         }
 

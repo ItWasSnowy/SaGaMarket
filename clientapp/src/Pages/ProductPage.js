@@ -18,6 +18,15 @@ function ProductPage({ setCartItemsCount }) {
   const [averageRating, setAverageRating] = useState(0);
   const [authorNames, setAuthorNames] = useState({});
   const [loadingComments, setLoadingComments] = useState({});
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState(null);
+  const [showCommentForms, setShowCommentForms] = useState({});
+  const [commentTexts, setCommentTexts] = useState({});
+  const [submittingComments, setSubmittingComments] = useState({});
+  const [commentErrors, setCommentErrors] = useState({});
 
   // Загрузка данных товара
   useEffect(() => {
@@ -45,18 +54,22 @@ function ProductPage({ setCartItemsCount }) {
         const response = await axios.get(
           `https://localhost:7182/api/Review/products/${productId}/reviews`
         );
-        setReviews(response.data || []);
+        
+        const reviewsData = Array.isArray(response.data) ? response.data : [response.data];
+        setReviews(reviewsData);
 
-        const ids = [...new Set(response.data.map(r => r.authorId))];
+        const authorIds = [...new Set(reviewsData.map(r => r.authorId))];
         const names = {};
-        await Promise.all(ids.map(async id => {
+        
+        await Promise.all(authorIds.map(async id => {
           try {
-            const user = await axios.get(`https://localhost:7182/api/User/${id}/name`);
-            names[id] = user.data;
+            const userResponse = await axios.get(`https://localhost:7182/api/User/${id}/name`);
+            names[id] = userResponse.data;
           } catch {
             names[id] = 'Аноним';
           }
         }));
+        
         setAuthorNames(names);
       } catch (err) {
         setReviewError('Не удалось загрузить отзывы');
@@ -87,12 +100,19 @@ function ProductPage({ setCartItemsCount }) {
         { withCredentials: true }
       );
 
-      // Форматирование комментариев
-      const commentsData = Array.isArray(response.data) ? response.data : [response.data];
+      // Обработка разных форматов ответа
+      let commentsData = [];
+      if (Array.isArray(response.data)) {
+        commentsData = response.data;
+      } else if (response.data && typeof response.data === 'object') {
+        // Если приходит один комментарий как объект
+        commentsData = [response.data];
+      }
+
       const formattedComments = commentsData.map(comment => ({
-        id: comment.id || comment.commentId,
+        id: comment.id || comment.commentId || Math.random().toString(36).substr(2, 9),
         author: comment.authorName || comment.author?.name || 'Аноним',
-        text: comment.text || comment.content || comment.message || '',
+        text: comment.text || comment.content || comment.message || comment.commentText || '',
         date: comment.createdAt || comment.date || new Date().toISOString()
       }));
 
@@ -111,6 +131,21 @@ function ProductPage({ setCartItemsCount }) {
     } else if (comments[reviewId]) {
       setComments(prev => ({ ...prev, [reviewId]: undefined }));
     }
+  };
+
+  const toggleCommentForm = (reviewId) => {
+    setShowCommentForms(prev => ({
+      ...prev,
+      [reviewId]: !prev[reviewId]
+    }));
+    setCommentTexts(prev => ({
+      ...prev,
+      [reviewId]: ''
+    }));
+    setCommentErrors(prev => ({
+      ...prev,
+      [reviewId]: null
+    }));
   };
 
   const handleAddToCart = async () => {
@@ -138,6 +173,128 @@ function ProductPage({ setCartItemsCount }) {
     }
   };
 
+  const handleSubmitReview = async () => {
+    if (!reviewText.trim()) {
+      setReviewSubmitError('Пожалуйста, напишите отзыв');
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      setReviewSubmitError(null);
+
+      const response = await axios.post(
+        'https://localhost:7182/api/Review',
+        {
+          productId: productId,
+          userRating: reviewRating,
+          textReview: reviewText
+        },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.status === 201) {
+        setShowReviewForm(false);
+        setReviewText('');
+        setReviewRating(5);
+        
+        const reviewsResponse = await axios.get(
+          `https://localhost:7182/api/Review/products/${productId}/reviews`
+        );
+        
+        const updatedReviews = Array.isArray(reviewsResponse.data) ? reviewsResponse.data : [reviewsResponse.data];
+        setReviews(updatedReviews);
+
+        if (response.data?.authorId && !authorNames[response.data.authorId]) {
+          try {
+            const userResponse = await axios.get(`https://localhost:7182/api/User/${response.data.authorId}/name`);
+            setAuthorNames(prev => ({
+              ...prev,
+              [response.data.authorId]: userResponse.data
+            }));
+          } catch {
+            setAuthorNames(prev => ({
+              ...prev,
+              [response.data.authorId]: 'Аноним'
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка при отправке отзыва:', error);
+      setReviewSubmitError(error.response?.data?.message || 'Не удалось отправить отзыв');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleSubmitComment = async (reviewId) => {
+    const commentText = commentTexts[reviewId] || '';
+    
+    if (!commentText.trim()) {
+      setCommentErrors(prev => ({
+        ...prev,
+        [reviewId]: 'Пожалуйста, напишите комментарий'
+      }));
+      return;
+    }
+
+    try {
+      setSubmittingComments(prev => ({
+        ...prev,
+        [reviewId]: true
+      }));
+      setCommentErrors(prev => ({
+        ...prev,
+        [reviewId]: null
+      }));
+
+      const response = await axios.post(
+        'https://localhost:7182/api/Comment',
+        {
+          reviewId: reviewId,
+          commentText: commentText
+        },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.status === 201) {
+        setShowCommentForms(prev => ({
+          ...prev,
+          [reviewId]: false
+        }));
+        setCommentTexts(prev => ({
+          ...prev,
+          [reviewId]: ''
+        }));
+        
+        // Обновляем комментарии для этого отзыва
+        await fetchComments(reviewId);
+      }
+    } catch (error) {
+      console.error('Ошибка при отправке комментария:', error);
+      setCommentErrors(prev => ({
+        ...prev,
+        [reviewId]: error.response?.data?.message || 'Не удалось отправить комментарий'
+      }));
+    } finally {
+      setSubmittingComments(prev => ({
+        ...prev,
+        [reviewId]: false
+      }));
+    }
+  };
+
   const renderRatingStars = (rating) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -161,23 +318,114 @@ function ProductPage({ setCartItemsCount }) {
     );
   };
 
+  const renderReviewForm = () => (
+    <div className="review-form">
+      <h3>Оставить отзыв</h3>
+      <div className="form-group">
+        <label>Ваша оценка:</label>
+        <div className="rating-selector">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <span
+              key={star}
+              className={`star-select ${reviewRating >= star ? 'selected' : ''}`}
+              onClick={() => setReviewRating(star)}
+            >
+              ★
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="form-group">
+        <label>Ваш отзыв:</label>
+        <textarea
+          value={reviewText}
+          onChange={(e) => setReviewText(e.target.value)}
+          placeholder="Расскажите о вашем опыте использования товара"
+          rows="5"
+        />
+      </div>
+      {reviewSubmitError && <div className="error">{reviewSubmitError}</div>}
+      <div className="form-actions">
+        <button 
+          onClick={handleSubmitReview}
+          disabled={submittingReview}
+          className="submit-review-btn"
+        >
+          {submittingReview ? 'Отправка...' : 'Отправить отзыв'}
+        </button>
+        <button 
+          onClick={() => setShowReviewForm(false)}
+          className="cancel-review-btn"
+        >
+          Отмена
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderCommentForm = (reviewId) => (
+    <div className="comment-form">
+      <div className="form-group">
+        <label>Ваш комментарий:</label>
+        <textarea
+          value={commentTexts[reviewId] || ''}
+          onChange={(e) => setCommentTexts(prev => ({
+            ...prev,
+            [reviewId]: e.target.value
+          }))}
+          placeholder="Напишите ваш комментарий"
+          rows="3"
+        />
+      </div>
+      {commentErrors[reviewId] && <div className="error">{commentErrors[reviewId]}</div>}
+      <div className="form-actions">
+        <button 
+          onClick={() => handleSubmitComment(reviewId)}
+          disabled={submittingComments[reviewId]}
+          className="submit-comment-btn"
+        >
+          {submittingComments[reviewId] ? 'Отправка...' : 'Отправить комментарий'}
+        </button>
+        <button 
+          onClick={() => toggleCommentForm(reviewId)}
+          className="cancel-comment-btn"
+        >
+          Отмена
+        </button>
+      </div>
+    </div>
+  );
+
   const renderComments = (reviewId) => {
     if (!comments[reviewId]) return null;
 
     return (
-      <div className="comments-list">
-        {comments[reviewId].length > 0 ? (
-          comments[reviewId].map(comment => (
-            <div key={comment.id} className="comment">
-              <div className="comment-header">
-                <span>{comment.author}</span>
-                <span>{new Date(comment.date).toLocaleDateString()}</span>
+      <div className="comments-section">
+        <div className="comments-list">
+          {comments[reviewId].length > 0 ? (
+            comments[reviewId].map(comment => (
+              <div key={comment.id} className="comment">
+                <div className="comment-header">
+                  <span>{comment.author}</span>
+                  <span>{new Date(comment.date).toLocaleDateString()}</span>
+                </div>
+                <p className="comment-text">{comment.text}</p>
               </div>
-              <p className="comment-text">{comment.text}</p>
-            </div>
-          ))
+            ))
+          ) : (
+            <div className="no-comments">Нет комментариев</div>
+          )}
+        </div>
+        
+        {!showCommentForms[reviewId] ? (
+          <button
+            className="add-comment-btn"
+            onClick={() => toggleCommentForm(reviewId)}
+          >
+            Добавить комментарий
+          </button>
         ) : (
-          <div className="no-comments">Нет комментариев</div>
+          renderCommentForm(reviewId)
         )}
       </div>
     );
@@ -285,8 +533,18 @@ function ProductPage({ setCartItemsCount }) {
       </div>
 
       <div className="reviews-section">
-        <h2>Отзывы {reviews.length > 0 && `(${reviews.length})`}</h2>
-        
+        <div className="reviews-header">
+          <h2>Отзывы {reviews.length > 0 && `(${reviews.length})`}</h2>
+          <button 
+            onClick={() => setShowReviewForm(!showReviewForm)}
+            className="leave-review-btn"
+          >
+            {showReviewForm ? 'Скрыть форму' : 'Оставить отзыв'}
+          </button>
+        </div>
+
+        {showReviewForm && renderReviewForm()}
+
         {reviews.length > 0 && (
           <div className="average-rating">
             Средняя оценка: {renderRatingStars(averageRating)}
@@ -313,10 +571,10 @@ function ProductPage({ setCartItemsCount }) {
                   )}
                 </div>
                 <div className="review-content">
-                  {review.comment && <p>{review.comment}</p>}
+                  {review.textReview && <p>{review.textReview}</p>}
                 </div>
 
-                <div className="comments-section">
+                <div className="comments-toggle">
                   <button
                     onClick={() => toggleComments(review.reviewId)}
                     disabled={loadingComments[review.reviewId]}
@@ -327,8 +585,9 @@ function ProductPage({ setCartItemsCount }) {
                         ? 'Скрыть комментарии' 
                         : 'Показать комментарии'}
                   </button>
-                  {renderComments(review.reviewId)}
                 </div>
+                
+                {comments[review.reviewId] && renderComments(review.reviewId)}
               </div>
             ))}
           </div>

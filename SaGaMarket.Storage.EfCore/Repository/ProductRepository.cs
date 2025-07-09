@@ -23,6 +23,79 @@ namespace SaGaMarket.Storage.EfCore.Repository
             await _context.SaveChangesAsync();
             return product.ProductId;
         }
+
+        public async Task<IEnumerable<Product>> GetFilteredProducts(
+    string? category,
+    double? minRating,
+    string? searchTerm,
+    int page,
+    int pageSize)
+        {
+            var query = _context.Products.AsQueryable();
+
+            if (!string.IsNullOrEmpty(category))
+            {
+                query = query.Where(p => p.Category == category);
+            }
+
+            if (minRating.HasValue)
+            {
+                query = query.Where(p => p.AverageRating >= minRating.Value);
+            }
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                query = query.Where(p => p.Name.Contains(searchTerm));
+            }
+
+            return await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        public async Task<List<string>> GetAllCategoriesAsync()
+        {
+            return await _context.Products
+                .Select(p => p.Category)
+                .Distinct()
+                .OrderBy(c => c)
+                .ToListAsync();
+        }
+
+        public async Task<int> GetFilteredProductsCount(
+            string? category,
+            double? minRating,
+            string? searchTerm)
+        {
+            var query = _context.Products.AsQueryable();
+
+            if (!string.IsNullOrEmpty(category))
+            {
+                query = query.Where(p => p.Category == category);
+            }
+
+            if (minRating.HasValue)
+            {
+                query = query.Where(p => p.AverageRating >= minRating.Value);
+            }
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                query = query.Where(p => p.Name.Contains(searchTerm));
+            }
+
+            return await query.CountAsync();
+        }
+
+        public async Task<IEnumerable<string>> GetCategories()
+        {
+            return await _context.Products
+                .Select(p => p.Category)
+                .Distinct()
+                .ToListAsync();
+        }
+
         public async Task<(IEnumerable<Product> Products, int TotalCount)> GetProductsWithPaginationAsync(
     int page,
     int pageSize)

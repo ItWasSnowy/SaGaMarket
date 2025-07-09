@@ -138,6 +138,7 @@ namespace SaGaMarket.Server
             builder.Services.AddScoped<GetUserFavoritesUseCase>();
             builder.Services.AddScoped<GetProductsInfoUseCase>();
             builder.Services.AddScoped<ClearCartUseCase>();
+            builder.Services.AddScoped<ProductRepository>();
             //------------------------------
             builder.Services.AddHttpClient(); // Äëÿ IHttpClientFactory
             builder.Services.AddScoped<IPaymentService, YooKassaPaymentService>();

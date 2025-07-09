@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './ProfilePage.css';
 
-axios.defaults.withCredentials = true; // Важно!
+axios.defaults.withCredentials = true;
 
 const ProfilePage = () => {
   const [userData, setUserData] = useState(null);
@@ -37,11 +37,7 @@ const ProfilePage = () => {
   }, [navigate]);
 
 
-  const getCurrentUserId = () => {
-    // Здесь вы можете получить userId текущего пользователя
-    // Например, если вы храните его в localStorage или в контексте
-    return localStorage.getItem('userId'); // Пример
-  };
+
 
   const handleLogout = async () => {
     try {
@@ -104,7 +100,7 @@ const ProfilePage = () => {
         </div>
         <div className="stat">
           <h3>Заказы</h3>
-          <p>{userData.orderCount}</p> {/* Выводим количество заказов */}
+          <p>{userData.orderCount}</p>
         </div>
       </div>
 
