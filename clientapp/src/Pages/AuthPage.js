@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../authContext';
 import './AuthPage.css';
 import axios from 'axios';
+
 const AuthPage = ({ isLogin }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    name: ''
+    // Removed name from initial state since it's not needed
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -22,43 +23,60 @@ const AuthPage = ({ isLogin }) => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setIsLoading(true);
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-  try {
-    if (isLogin) {
-      const result = await login({
-        email: formData.email,
-        password: formData.password
-      });
-      
-      if (!result.success) {
-        throw new Error(result.message);
+    try {
+      if (isLogin) {
+        const result = await login({
+          email: formData.email,
+          password: formData.password
+        });
+        
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+      } else {
+        // Registration data with role set to "customer"
+        const registrationData = {
+          email: formData.email,
+          password: formData.password,
+          role: "customer" // Adding default role
+        };
+        
+        const response = await axios.post(
+          'https://localhost:7182/api/Account/register', 
+          registrationData,
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!response.data.userId) {
+          throw new Error('Не удалось зарегистрироваться');
+        }
+        
+        // Auto-login after registration
+        const loginResult = await login({
+          email: formData.email,
+          password: formData.password
+        });
+        
+        if (!loginResult.success) {
+          throw new Error(loginResult.message);
+        }
       }
-    } else {
-      // Регистрация
-      await axios.post('https://localhost:7182/api/Account/register', formData, {
-        withCredentials: true
-      });
-      
-      // Автовход после регистрации
-      const loginResult = await login({
-        email: formData.email,
-        password: formData.password
-      });
-      
-      if (!loginResult.success) {
-        throw new Error(loginResult.message);
-      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Произошла ошибка');
+      console.error('Auth error:', err);
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    setError(err.message);
-    console.error('Auth error:', err);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <div className="auth-container">
@@ -68,21 +86,7 @@ const AuthPage = ({ isLogin }) => {
         {error && <div className="auth-error">{error}</div>}
         
         <form onSubmit={handleSubmit} className="auth-form">
-          {!isLogin && (
-            <div className="form-group">
-              <label htmlFor="name" className="form-label">Имя пользователя</label>
-              <input
-                id="name"
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="form-input"
-                required
-                minLength={3}
-              />
-            </div>
-          )}
+          {/* Removed the name input field since it's not needed */}
           
           <div className="form-group">
             <label htmlFor="email" className="form-label">Email</label>
