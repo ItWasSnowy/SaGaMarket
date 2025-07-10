@@ -172,6 +172,8 @@ namespace SaGaMarket.Server
 
             var app = builder.Build();
 
+            app.UseStaticFiles();
+
             // Initialize roles and admin user
             using (var scope = app.Services.CreateScope())
             {

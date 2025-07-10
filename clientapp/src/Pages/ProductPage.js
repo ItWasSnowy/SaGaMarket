@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import ProductGallery from '../Components/ProductGallery'; 
 import './ProductPage.css';
 
 function ProductPage({ setCartItemsCount }) {
@@ -100,12 +101,10 @@ function ProductPage({ setCartItemsCount }) {
         { withCredentials: true }
       );
 
-      // Обработка разных форматов ответа
       let commentsData = [];
       if (Array.isArray(response.data)) {
         commentsData = response.data;
       } else if (response.data && typeof response.data === 'object') {
-        // Если приходит один комментарий как объект
         commentsData = [response.data];
       }
 
@@ -277,8 +276,6 @@ function ProductPage({ setCartItemsCount }) {
           ...prev,
           [reviewId]: ''
         }));
-        
-        // Обновляем комментарии для этого отзыва
         await fetchComments(reviewId);
       }
     } catch (error) {
@@ -441,22 +438,11 @@ function ProductPage({ setCartItemsCount }) {
 
       <div className="product-content">
         <div className="product-gallery">
-          {selectedVariant?.imageUrl ? (
-            <img
-              src={selectedVariant.imageUrl}
-              alt={product.name}
-              className="product-main-image"
-              onError={(e) => {
-                e.target.src = '/placeholder-product-large.png';
-                e.target.className = 'product-image-placeholder';
-              }}
-            />
-          ) : (
-            <div className="product-image-placeholder">
-              <span>Нет изображения</span>
-            </div>
-          )}
-        </div>
+  <ProductGallery 
+    variantId={selectedVariant?.variantId} 
+    productName={product.name} 
+  />
+</div>
 
         <div className="product-details">
           <h1 className="product-title">{product.name}</h1>

@@ -1,4 +1,4 @@
-/* Catalog.css - Обновленная версия для карточек товаров */
+/* Catalog.css - Оптимизированная версия */
 
 .catalog {
   width: 100%;
@@ -16,7 +16,7 @@
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -38,38 +38,40 @@
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
+/* Обновленные стили для контейнера изображения */
 .product-image-container {
   position: relative;
-  padding-top: 75%; /* Соотношение сторон 4:3 */
+  padding-top: 100%; /* Квадратное соотношение */
   overflow: hidden;
+  background-color: #f8f8f8;
 }
 
-.product-image-container img {
+/* Стили для ProductGallery внутри контейнера */
+.product-image-container .product-gallery-container {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
 }
 
-.product-card:hover .product-image-container img {
-  transform: scale(1.05);
-}
-
-.image-placeholder {
-  position: absolute;
-  top: 0;
-  left: 0;
+.product-image-container .product-image-wrapper {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5;
-  color: #999;
-  font-size: 0.9rem;
+}
+
+.product-image-container .product-main-image {
+  max-width: 80%;
+  max-height: 80%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-main-image {
+  transform: scale(1.05);
 }
 
 .product-info {
@@ -80,7 +82,7 @@
 }
 
 .product-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
   color: var(--dark-color);
@@ -89,12 +91,13 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 2.8rem;
+  line-height: 1.3;
 }
 
 .product-price {
   font-weight: 700;
   color: var(--primary-color);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   margin: 0.5rem 0;
 }
 
@@ -105,25 +108,56 @@
   padding-top: 0.5rem;
 }
 
-.stars {
+.stars-container {
   display: flex;
-  color: #ffc107;
+  align-items: center;
+}
+
+.stars-container .star {
   font-size: 0.9rem;
-  margin-right: 0.5rem;
+  margin-right: 2px;
+}
+
+.stars-container .full-star {
+  color: #ffc107;
+}
+
+.stars-container .half-star {
+  color: #ffc107;
+}
+
+.stars-container .empty-star {
+  color: #ddd;
 }
 
 .rating-value {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #666;
-  margin-right: 0.3rem;
+  margin-left: 5px;
 }
 
 .reviews-count {
   font-size: 0.8rem;
   color: #999;
+  margin-left: 5px;
 }
 
-/* Остальные стили (пагинация и т.д.) остаются без изменений */
+.no-rating {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.product-variants {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Пагинация */
 .pagination-container {
   display: flex;
   flex-direction: column;
@@ -140,6 +174,7 @@
 
 .page-info {
   font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .pagination-button {
@@ -151,6 +186,7 @@
   border: none;
   cursor: pointer;
   transition: var(--transition);
+  font-size: 0.9rem;
 }
 
 .pagination-button:hover {
@@ -165,14 +201,16 @@
 .page-jump {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .page-input {
   padding: 0.5rem;
   border: 1px solid #ddd;
   border-radius: var(--border-radius);
-  width: 80px;
+  width: 60px;
   text-align: center;
+  font-size: 0.9rem;
 }
 
 .jump-button {
@@ -183,68 +221,58 @@
   border: none;
   cursor: pointer;
   transition: var(--transition);
+  font-size: 0.9rem;
 }
 
 .jump-button:hover {
   background-color: #3aa8d8;
 }
 
-@media (max-width: 768px) {
-  .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-  }
-  
-  .product-title {
-    font-size: 0.9rem;
-    min-height: 2.6rem;
-  }
-  
-  .product-price {
-    font-size: 1.1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  }
-}
-
+/* Фильтры */
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 30px;
+  gap: 15px;
+  margin-bottom: 25px;
   padding: 15px;
   background: #f5f5f5;
   border-radius: 8px;
+  align-items: center;
 }
 
 .filter-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .search-box input {
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  min-width: 250px;
+  min-width: 200px;
+  font-size: 0.9rem;
 }
 
 .rating-filter {
   display: flex;
   gap: 5px;
+  flex-wrap: wrap;
 }
 
 .rating-filter button {
-  padding: 5px 10px;
+  padding: 5px 8px;
   border: 1px solid #ddd;
   background: white;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
 }
 
 .rating-filter button.active {
@@ -257,4 +285,65 @@ select {
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  font-size: 0.9rem;
+  min-width: 150px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  
+  .product-title {
+    font-size: 0.9rem;
+    min-height: 2.4rem;
+  }
+  
+  .product-price {
+    font-size: 1rem;
+  }
+
+  .filters {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .search-box input {
+    min-width: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .product-image-container {
+    padding-top: 90%; /* Чуть менее квадратное */
+  }
+
+  .product-info {
+    padding: 0.8rem;
+  }
+
+  .product-title {
+    font-size: 0.85rem;
+    min-height: 2.2rem;
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .search-box input {
+    width: 100%;
+  }
 }

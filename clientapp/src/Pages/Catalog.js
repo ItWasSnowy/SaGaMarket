@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import ProductGallery from '../Components/ProductGallery';
 import './Catalog.css';
 
 function Catalog() {
@@ -18,6 +19,7 @@ function Catalog() {
   const [minRating, setMinRating] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const abortControllerRef = useRef(null);
+  const variantsCache = useRef({});
   const navigate = useNavigate();
 
   const fetchCategories = async () => {
@@ -33,6 +35,24 @@ function Catalog() {
     }
   };
 
+  const fetchVariantsForProduct = async (productId) => {
+    if (variantsCache.current[productId]) {
+      return variantsCache.current[productId];
+    }
+
+    try {
+      const response = await axios.get(
+        `https://localhost:7182/api/Variant/products/${productId}/variants`,
+        { timeout: 5000 }
+      );
+      variantsCache.current[productId] = response.data;
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching variants for product ${productId}:`, error);
+      return [];
+    }
+  };
+
   const fetchProducts = async (page = 1) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -45,7 +65,7 @@ function Catalog() {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get('https://localhost:7182/api/Product/filtered', {
+      const productsResponse = await axios.get('https://localhost:7182/api/Product/filtered', {
         params: { 
           page, 
           pageSize: pagination.pageSize,
@@ -56,18 +76,35 @@ function Catalog() {
         signal: controller.signal
       });
 
-      const totalCount = parseInt(response.headers['x-total-count'], 10) || 0;
-      const productsWithCleanData = response.data.map(p => ({
-        ...p,
-        productName: p.productName,
-        minPrice: p.minPrice || 0,
-        maxPrice: p.maxPrice || p.minPrice || 0,
-        imageUrl: p.imageUrl || null,
-        averageRating: p.averageRating,
-        reviewsCount: p.reviewsCount || 0
-      }));
+      const totalCount = parseInt(productsResponse.headers['x-total-count'], 10) || 0;
+      
+      const productsWithVariants = await Promise.all(
+        productsResponse.data.map(async product => {
+          const variants = await fetchVariantsForProduct(product.productId);
+          return {
+            ...product,
+            variants: variants
+          };
+        })
+      );
 
-      setProducts(productsWithCleanData.filter(p => p.productId));
+      const processedProducts = productsWithVariants.map(product => {
+        const prices = product.variants.length > 0 
+          ? product.variants.map(v => v.price)
+          : [product.price || 0];
+        
+        return {
+          ...product,
+          productName: product.productName || 'Без названия',
+          minPrice: Math.min(...prices),
+          maxPrice: Math.max(...prices),
+          averageRating: product.averageRating || 0,
+          reviewsCount: product.reviewsCount || 0,
+          variants: product.variants
+        };
+      }).filter(p => p.productId);
+
+      setProducts(processedProducts);
       setPagination(prev => ({
         ...prev,
         page,
@@ -120,10 +157,6 @@ function Catalog() {
   };
 
   const handleProductClick = (productId) => {
-    if (!productId) {
-      console.error('Attempted to navigate with undefined productId');
-      return;
-    }
     navigate(`/product/${productId}`);
   };
 
@@ -150,48 +183,50 @@ function Catalog() {
     );
   };
 
-  const renderProductCard = (product) => (
-    <div 
-      key={product.productId}
-      className="product-card"
-      onClick={() => handleProductClick(product.productId)}
-    >
-      <div className="product-image-container">
-        {product.imageUrl ? (
-          <img 
-            src={product.imageUrl} 
-            alt={product.productName || 'Изображение товара'}
-            onError={(e) => {
-              e.target.src = '/placeholder-product.png';
-              e.target.onerror = null;
-            }}
+  const renderProductCard = (product) => {
+    // Берем первый вариант для отображения изображения
+    const firstVariant = product.variants.length > 0 ? product.variants[0] : null;
+    
+    return (
+      <div 
+        key={product.productId}
+        className="product-card"
+        onClick={() => handleProductClick(product.productId)}
+      >
+        <div className="product-image-container">
+          <ProductGallery 
+            variantId={firstVariant?.variantId} 
+            productName={product.productName} 
           />
-        ) : (
-          <div className="image-placeholder">
-            <span>Нет изображения</span>
-          </div>
-        )}
-      </div>
-      
-      <div className="product-info">
-        <h3 className="product-title">
-          {product.productName || 'Название не указано'}
-        </h3>
-        <p className="product-price">
-          {product.minPrice === product.maxPrice
-            ? `${product.minPrice?.toLocaleString() || '0'} ₽`
-            : `от ${product.minPrice?.toLocaleString() || '0'} ₽`}
-        </p>
+        </div>
         
-        <div className="product-rating">
-          {renderRatingStars(product.averageRating)}
-          {product.reviewsCount > 0 && (
-            <span className="reviews-count">({product.reviewsCount})</span>
+        <div className="product-info">
+          <h3 className="product-title">
+            {product.productName}
+          </h3>
+          <p className="product-price">
+            {product.minPrice === product.maxPrice
+              ? `${product.minPrice.toLocaleString()} ₽`
+              : `${product.minPrice.toLocaleString()} - ${product.maxPrice.toLocaleString()} ₽`}
+          </p>
+          
+          <div className="product-rating">
+            {renderRatingStars(product.averageRating)}
+            {product.reviewsCount > 0 && (
+              <span className="reviews-count">({product.reviewsCount})</span>
+            )}
+          </div>
+
+          {product.variants.length > 0 && (
+            <div className="product-variants">
+              Варианты: {product.variants.slice(0, 3).map(v => v.name).join(', ')}
+              {product.variants.length > 3 && '...'}
+            </div>
           )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const totalPages = Math.ceil(pagination.totalCount / pagination.pageSize);
 

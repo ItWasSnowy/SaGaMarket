@@ -10,16 +10,21 @@ const CreateProduct = () => {
   const [step, setStep] = useState(1); // 1 - создание товара, 2 - добавление вариантов
   const [productData, setProductData] = useState({
     category: '',
-    name: ''
+    name: '',
+    description: ''
   });
   const [variants, setVariants] = useState([{
     name: '',
     price: 0,
-    count: 0
+    count: 0,
+    description: '',
+    image: null,
+    imagePreview: null
   }]);
   const [productId, setProductId] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [uploadingImages, setUploadingImages] = useState({});
 
   // Шаг 1: Создание основного товара
   const handleCreateBaseProduct = async (e) => {
@@ -33,7 +38,8 @@ const CreateProduct = () => {
     try {
       const response = await axios.post('https://localhost:7182/api/Product', {
         category: productData.category,
-        name: productData.name
+        name: productData.name,
+        description: productData.description
       });
       
       setProductId(response.data.productId);
@@ -46,42 +52,94 @@ const CreateProduct = () => {
     }
   };
 
-  // Шаг 2: Добавление вариантов
-  const handleAddVariants = async (e) => {
-  e.preventDefault();
-  
-  try {
-    // Подготовка всех запросов на создание вариантов
-    const variantRequests = variants.map(variant => 
-      axios.post('https://localhost:7182/api/Variant', {
-        productId: productId, // Обязательное поле
-        name: variant.name,
-        description: variant.description || "Без описания", // Дефолтное значение
-        price: variant.price,
-        count: variant.count
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true
-      })
-    );
+  // Обработка загрузки изображения для варианта
+  const handleImageUpload = async (index, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    // Отправка всех запросов
-    await Promise.all(variantRequests);
+    // Создаем превью изображения
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const newVariants = [...variants];
+      newVariants[index].imagePreview = e.target.result;
+      setVariants(newVariants);
+    };
+    reader.readAsDataURL(file);
+
+    // Сохраняем файл для последующей загрузки
+    const newVariants = [...variants];
+    newVariants[index].image = file;
+    setVariants(newVariants);
+  };
+
+  // Шаг 2: Добавление вариантов с загрузкой изображений
+  const handleAddVariants = async (e) => {
+    e.preventDefault();
     
-    setSuccess('Все варианты успешно добавлены!');
-    setTimeout(() => navigate(`/profile`), 2000);
-  } catch (err) {
-    console.error('Детали ошибки:', {
-      status: err.response?.status,
-      data: err.response?.data,
-      config: err.config
-    });
-    
-    setError(err.response?.data?.message || 'Ошибка при добавлении вариантов');
-  }
-};
+    try {
+      // Проверяем, что все обязательные поля заполнены
+      for (const variant of variants) {
+        if (!variant.name || variant.price <= 0 || variant.count < 0) {
+          throw new Error('Заполните все обязательные поля для вариантов');
+        }
+      }
+
+      // Создаем варианты и загружаем изображения
+      const variantPromises = variants.map(async (variant, index) => {
+        // Сначала создаем вариант без изображения
+        const variantResponse = await axios.post('https://localhost:7182/api/Variant', {
+          productId: productId,
+          name: variant.name,
+          description: variant.description || "Без описания",
+          price: variant.price,
+          count: variant.count
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true
+        });
+
+        const variantId = variantResponse.data.variantId;
+
+        // Если есть изображение, загружаем его
+        if (variant.image) {
+          setUploadingImages(prev => ({ ...prev, [index]: true }));
+          
+          const formData = new FormData();
+          formData.append('image', variant.image);
+
+          await axios.post(
+            `https://localhost:7182/api/Media/upload-image/${variantId}`,
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              },
+              withCredentials: true
+            }
+          );
+        }
+
+        return variantResponse.data;
+      });
+
+      await Promise.all(variantPromises);
+      
+      setSuccess('Все варианты успешно добавлены!');
+      setTimeout(() => navigate(`/profile`), 2000);
+    } catch (err) {
+      console.error('Детали ошибки:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        config: err.config
+      });
+      
+      setError(err.response?.data?.message || err.message || 'Ошибка при добавлении вариантов');
+    } finally {
+      setUploadingImages({});
+    }
+  };
 
   const handleVariantChange = (index, e) => {
     const { name, value } = e.target;
@@ -94,7 +152,14 @@ const CreateProduct = () => {
   };
 
   const addVariant = () => {
-    setVariants([...variants, { name: '', price: 0, count: 0 }]);
+    setVariants([...variants, { 
+      name: '', 
+      price: 0, 
+      count: 0,
+      description: '',
+      image: null,
+      imagePreview: null
+    }]);
   };
 
   const removeVariant = (index) => {
@@ -136,6 +201,16 @@ const CreateProduct = () => {
                 value={productData.name}
                 onChange={(e) => setProductData({...productData, name: e.target.value})}
                 required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Описание товара:</label>
+              <textarea
+                name="description"
+                value={productData.description}
+                onChange={(e) => setProductData({...productData, description: e.target.value})}
+                rows="4"
               />
             </div>
 
@@ -197,6 +272,31 @@ const CreateProduct = () => {
                   />
                 </div>
 
+                <div className="form-group">
+                  <label>Описание варианта:</label>
+                  <textarea
+                    name="description"
+                    value={variant.description}
+                    onChange={(e) => handleVariantChange(index, e)}
+                    rows="3"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Изображение варианта:</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(index, e)}
+                  />
+                  {variant.imagePreview && (
+                    <div className="image-preview">
+                      <img src={variant.imagePreview} alt="Превью" />
+                    </div>
+                  )}
+                  {uploadingImages[index] && <div>Загрузка изображения...</div>}
+                </div>
+
                 {variants.length > 1 && (
                   <button
                     type="button"
@@ -218,7 +318,11 @@ const CreateProduct = () => {
             </button>
 
             <div className="form-actions">
-              <button type="submit" className="submit-btn">
+              <button 
+                type="submit" 
+                className="submit-btn"
+                disabled={Object.values(uploadingImages).some(Boolean)}
+              >
                 Сохранить варианты
               </button>
               <button
