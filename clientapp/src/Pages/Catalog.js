@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { FaHeart, FaRegHeart, FaSpinner } from 'react-icons/fa';
 import ProductGallery from '../Components/ProductGallery';
+import { useAuth } from '../authContext';
 import './Catalog.css';
 
 function Catalog() {
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,8 +21,10 @@ function Catalog() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [minRating, setMinRating] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [favoritesLoading, setFavoritesLoading] = useState({});
   const abortControllerRef = useRef(null);
   const variantsCache = useRef({});
+  const reviewsCache = useRef({});
   const navigate = useNavigate();
 
   const fetchCategories = async () => {
@@ -53,6 +58,80 @@ function Catalog() {
     }
   };
 
+  const fetchReviewsForProduct = async (productId) => {
+    if (reviewsCache.current[productId]) {
+      return reviewsCache.current[productId];
+    }
+
+    try {
+      const response = await axios.get(
+        `https://localhost:7182/api/Review/products/${productId}/reviews`,
+        { timeout: 5000 }
+      );
+      reviewsCache.current[productId] = response.data;
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching reviews for product ${productId}:`, error);
+      return [];
+    }
+  };
+
+  const calculateProductRating = (reviews) => {
+    if (!reviews || reviews.length === 0) return { averageRating: 0, reviewsCount: 0 };
+
+    const totalRating = reviews.reduce((sum, review) => sum + review.userRating, 0);
+    const averageRating = totalRating / reviews.length;
+    return {
+      averageRating: parseFloat(averageRating.toFixed(1)),
+      reviewsCount: reviews.length
+    };
+  };
+
+  const toggleFavorite = async (productId, e) => {
+    e.stopPropagation();
+    
+    if (!user) {
+      alert('Для добавления в избранное необходимо авторизоваться');
+      navigate('/login');
+      return;
+    }
+
+    setFavoritesLoading(prev => ({ ...prev, [productId]: true }));
+    
+    try {
+      const product = products.find(p => p.productId === productId);
+      const isCurrentlyFavorite = product.isFavorite;
+      
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      if (isCurrentlyFavorite) {
+        // Удаление из избранного
+        await axios.delete(`https://localhost:7182/api/favorites?productId=${productId}`, config);
+      } else {
+        // Добавление в избранное
+        await axios.post(
+          'https://localhost:7182/api/favorites/add',
+          { productId },
+          config
+        );
+      }
+
+      setProducts(products.map(p => 
+        p.productId === productId ? { ...p, isFavorite: !isCurrentlyFavorite } : p
+      ));
+    } catch (error) {
+      console.error('Ошибка при обновлении избранного:', error);
+      alert('Не удалось обновить избранное. Пожалуйста, попробуйте позже.');
+    } finally {
+      setFavoritesLoading(prev => ({ ...prev, [productId]: false }));
+    }
+  };
+
   const fetchProducts = async (page = 1) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -78,17 +157,26 @@ function Catalog() {
 
       const totalCount = parseInt(productsResponse.headers['x-total-count'], 10) || 0;
       
-      const productsWithVariants = await Promise.all(
+      const productsWithVariantsAndReviews = await Promise.all(
         productsResponse.data.map(async product => {
-          const variants = await fetchVariantsForProduct(product.productId);
+          const [variants, reviews] = await Promise.all([
+            fetchVariantsForProduct(product.productId),
+            fetchReviewsForProduct(product.productId)
+          ]);
+          
+          const { averageRating, reviewsCount } = calculateProductRating(reviews);
+          
           return {
             ...product,
-            variants: variants
+            variants,
+            averageRating,
+            reviewsCount,
+            isFavorite: product.isFavorite || false
           };
         })
       );
 
-      const processedProducts = productsWithVariants.map(product => {
+      const processedProducts = productsWithVariantsAndReviews.map(product => {
         const prices = product.variants.length > 0 
           ? product.variants.map(v => v.price)
           : [product.price || 0];
@@ -98,8 +186,6 @@ function Catalog() {
           productName: product.productName || 'Без названия',
           minPrice: Math.min(...prices),
           maxPrice: Math.max(...prices),
-          averageRating: product.averageRating || 0,
-          reviewsCount: product.reviewsCount || 0,
           variants: product.variants
         };
       }).filter(p => p.productId);
@@ -161,30 +247,33 @@ function Catalog() {
   };
 
   const renderRatingStars = (rating) => {
-    if (rating === null || rating === undefined || isNaN(rating)) {
+    if (rating === 0 || rating === null || rating === undefined) {
       return <span className="no-rating">Нет оценок</span>;
     }
-
+    
+    const stars = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        stars.push(<span key={i} className="star filled">★</span>);
+      } else if (i === fullStars + 1 && hasHalfStar) {
+        stars.push(<span key={i} className="star half">★</span>);
+      } else {
+        stars.push(<span key={i} className="star empty">☆</span>);
+      }
+    }
 
     return (
-      <div className="stars-container">
-        {[...Array(fullStars)].map((_, i) => (
-          <span key={`full-${i}`} className="star full-star">★</span>
-        ))}
-        {hasHalfStar && <span className="star half-star">½</span>}
-        {[...Array(emptyStars)].map((_, i) => (
-          <span key={`empty-${i}`} className="star empty-star">☆</span>
-        ))}
+      <div className="rating-stars">
+        {stars}
         <span className="rating-value">{rating.toFixed(1)}</span>
       </div>
     );
   };
 
   const renderProductCard = (product) => {
-    // Берем первый вариант для отображения изображения
     const firstVariant = product.variants.length > 0 ? product.variants[0] : null;
     
     return (
@@ -198,6 +287,21 @@ function Catalog() {
             variantId={firstVariant?.variantId} 
             productName={product.productName} 
           />
+          
+          <button
+            className={`favorite-btn ${product.isFavorite ? 'active' : ''}`}
+            onClick={(e) => toggleFavorite(product.productId, e)}
+            disabled={favoritesLoading[product.productId]}
+            aria-label={product.isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+          >
+            {favoritesLoading[product.productId] ? (
+              <FaSpinner className="spinner-icon" />
+            ) : product.isFavorite ? (
+              <FaHeart color="#ff4d4d" />
+            ) : (
+              <FaRegHeart />
+            )}
+          </button>
         </div>
         
         <div className="product-info">
@@ -211,9 +315,15 @@ function Catalog() {
           </p>
           
           <div className="product-rating">
-            {renderRatingStars(product.averageRating)}
-            {product.reviewsCount > 0 && (
-              <span className="reviews-count">({product.reviewsCount})</span>
+            {product.averageRating > 0 ? (
+              <>
+                {renderRatingStars(product.averageRating)}
+                {product.reviewsCount > 0 && (
+                  <span className="reviews-count">({product.reviewsCount})</span>
+                )}
+              </>
+            ) : (
+              <span className="no-rating">Нет оценок</span>
             )}
           </div>
 
@@ -246,7 +356,12 @@ function Catalog() {
   }
 
   if (loading && products.length === 0) {
-    return <div className="loading">Загрузка товаров...</div>;
+    return (
+      <div className="loading-container">
+        <FaSpinner className="spinner" />
+        <p>Загрузка товаров...</p>
+      </div>
+    );
   }
 
   return (

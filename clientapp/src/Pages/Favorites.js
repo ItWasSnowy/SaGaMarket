@@ -1,23 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../authContext';
+import { FaHeart, FaSpinner } from 'react-icons/fa';
 import './Favorites.css';
 
 function Favorites({ setFavoritesCount }) {
   const [favoriteProducts, setFavoriteProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [favoritesLoading, setFavoritesLoading] = useState({});
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const fetchVariantsForProduct = async (productId) => {
     try {
       const response = await fetch(
-        `https://localhost:7182/api/products/${productId}/variants`,
+        `https://localhost:7182/api/Variant/products/${productId}/variants`,
         { credentials: 'include' }
       );
       if (!response.ok) throw new Error(`Не удалось загрузить варианты для товара ${productId}`);
-      return await response.json();
+      const variants = await response.json();
+      return variants.length > 0 ? variants : [];
     } catch (err) {
       console.error(`Ошибка при загрузке вариантов для товара ${productId}:`, err);
       return [];
@@ -67,22 +70,12 @@ function Favorites({ setFavoritesCount }) {
       const productsWithVariants = await Promise.all(
         productsData.map(async product => {
           const variants = await fetchVariantsForProduct(product.productId);
-          
-          let priceRange = 'Цена не указана';
-          if (variants.length > 0) {
-            const prices = variants.map(v => v.price);
-            const minPrice = Math.min(...prices);
-            const maxPrice = Math.max(...prices);
-            
-            priceRange = minPrice === maxPrice 
-              ? `${minPrice} ₽` 
-              : `${minPrice} - ${maxPrice} ₽`;
-          }
-
           return {
             ...product,
-            priceRange,
-            variants
+            variants: variants,
+            imageUrl: variants.length > 0 && variants[0].variantId 
+              ? `https://localhost:7182/api/Media/image/${variants[0].variantId}.png`
+              : null
           };
         })
       );
@@ -99,10 +92,13 @@ function Favorites({ setFavoritesCount }) {
     }
   };
 
-  const removeFromFavorites = async (productId) => {
+  const removeFromFavorites = async (productId, e) => {
+    e.stopPropagation();
     if (!user) return;
 
     try {
+      setFavoritesLoading(prev => ({ ...prev, [productId]: true }));
+      
       const response = await fetch(
         `https://localhost:7182/api/favorites/remove?userId=${user.userId}`,
         {
@@ -125,16 +121,25 @@ function Favorites({ setFavoritesCount }) {
         throw new Error(errorData.message || 'Не удалось удалить из избранного');
       }
       
-      await fetchUserFavorites();
+      setFavoriteProducts(prev => prev.filter(p => p.productId !== productId));
+      if (setFavoritesCount) {
+        setFavoritesCount(prev => prev - 1);
+      }
     } catch (err) {
       console.error('Ошибка при удалении из избранного:', err);
       setError(err.message);
+    } finally {
+      setFavoritesLoading(prev => ({ ...prev, [productId]: false }));
     }
   };
 
   useEffect(() => {
     fetchUserFavorites();
   }, [user]);
+
+  const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+  };
 
   return (
     <div className="favorites-page">
@@ -147,39 +152,45 @@ function Favorites({ setFavoritesCount }) {
       ) : favoriteProducts.length > 0 ? (
         <div className="favorites-grid">
           {favoriteProducts.map((product) => (
-            <div key={product.productId} className="favorite-item">
-              <div 
-                className="product-image"
-                onClick={() => navigate(`/product/${product.productId}`)}
-              >
-                {product.imageUrl && (
+            <div 
+              key={product.productId} 
+              className="favorite-item"
+              onClick={() => handleProductClick(product.productId)}
+            >
+              <div className="product-image-container">
+                {product.imageUrl ? (
                   <img 
                     src={product.imageUrl} 
                     alt={product.name}
-                    onError={(e) => e.target.style.display = 'none'}
+                    className="product-image"
+                    onError={(e) => {
+                      e.target.src = '/placeholder-image.png'; // Запасное изображение
+                    }}
                   />
+                ) : (
+                  <div className="image-placeholder">Нет изображения</div>
                 )}
+                <button
+                  className="remove-favorite-btn"
+                  onClick={(e) => removeFromFavorites(product.productId, e)}
+                  disabled={favoritesLoading[product.productId]}
+                >
+                  {favoritesLoading[product.productId] ? (
+                    <FaSpinner className="spinner-icon" />
+                  ) : (
+                    <FaHeart color="#ff4d4d" />
+                  )}
+                </button>
               </div>
               
               <div className="product-info">
-                <h3 onClick={() => navigate(`/product/${product.productId}`)}>
-                  {product.name}
-                </h3>
+                <h3>{product.name}</h3>
                 
                 <div className="product-details">
-                  <p className="price-range">Цена: {product.priceRange}</p>
                   <p className="category">Категория: {product.category}</p>
-                  <p className="seller">Продавец: {product.sellerName}</p>
-                </div>
-                
-                <div className="product-actions">
-                  <button 
-                    className="remove-btn"
-                    onClick={() => removeFromFavorites(product.productId)}
-                    disabled={isLoading}
-                  >
-                    Удалить из избранного
-                  </button>
+                  {product.variant?.price && (
+                    <p className="price">{product.variant.price.toLocaleString()} ₽</p>
+                  )}
                 </div>
               </div>
             </div>

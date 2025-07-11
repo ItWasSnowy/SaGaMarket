@@ -17,6 +17,7 @@ function ProductPage({ setCartItemsCount }) {
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [reviewError, setReviewError] = useState(null);
   const [averageRating, setAverageRating] = useState(0);
+  const [reviewsCount, setReviewsCount] = useState(0);
   const [authorNames, setAuthorNames] = useState({});
   const [loadingComments, setLoadingComments] = useState({});
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -29,7 +30,6 @@ function ProductPage({ setCartItemsCount }) {
   const [submittingComments, setSubmittingComments] = useState({});
   const [commentErrors, setCommentErrors] = useState({});
 
-  // Загрузка данных товара
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -47,7 +47,6 @@ function ProductPage({ setCartItemsCount }) {
     if (productId) fetchProduct();
   }, [productId]);
 
-  // Загрузка отзывов и авторов
   useEffect(() => {
     const fetchReviews = async () => {
       try {
@@ -58,6 +57,7 @@ function ProductPage({ setCartItemsCount }) {
         
         const reviewsData = Array.isArray(response.data) ? response.data : [response.data];
         setReviews(reviewsData);
+        setReviewsCount(reviewsData.length);
 
         const authorIds = [...new Set(reviewsData.map(r => r.authorId))];
         const names = {};
@@ -82,16 +82,16 @@ function ProductPage({ setCartItemsCount }) {
     if (productId) fetchReviews();
   }, [productId]);
 
-  // Расчет средней оценки
   useEffect(() => {
     if (reviews.length > 0) {
       const validReviews = reviews.filter(r => r.userRating != null);
       const sum = validReviews.reduce((acc, r) => acc + r.userRating, 0);
       setAverageRating(sum / validReviews.length || 0);
+    } else {
+      setAverageRating(0);
     }
   }, [reviews]);
 
-  // Загрузка комментариев
   const fetchComments = async (reviewId) => {
     try {
       setLoadingComments(prev => ({ ...prev, [reviewId]: true }));
@@ -208,6 +208,7 @@ function ProductPage({ setCartItemsCount }) {
         
         const updatedReviews = Array.isArray(reviewsResponse.data) ? reviewsResponse.data : [reviewsResponse.data];
         setReviews(updatedReviews);
+        setReviewsCount(updatedReviews.length);
 
         if (response.data?.authorId && !authorNames[response.data.authorId]) {
           try {
@@ -303,7 +304,7 @@ function ProductPage({ setCartItemsCount }) {
       } else if (i === fullStars && hasHalf) {
         stars.push(<span key={i} className="star half">★</span>);
       } else {
-        stars.push(<span key={i} className="star">★</span>);
+        stars.push(<span key={i} className="star empty">★</span>);
       }
     }
     
@@ -438,11 +439,11 @@ function ProductPage({ setCartItemsCount }) {
 
       <div className="product-content">
         <div className="product-gallery">
-  <ProductGallery 
-    variantId={selectedVariant?.variantId} 
-    productName={product.name} 
-  />
-</div>
+          <ProductGallery 
+            variantId={selectedVariant?.variantId} 
+            productName={product.name} 
+          />
+        </div>
 
         <div className="product-details">
           <h1 className="product-title">{product.name}</h1>
@@ -460,10 +461,10 @@ function ProductPage({ setCartItemsCount }) {
             </span>
           </div>
 
-          {reviews.length > 0 && (
+          {reviewsCount > 0 && (
             <div className="product-rating-summary">
               {renderRatingStars(averageRating)}
-              <span className="reviews-count">({reviews.length} отзывов)</span>
+              <span className="reviews-count">({reviewsCount} отзывов)</span>
             </div>
           )}
 
@@ -520,7 +521,7 @@ function ProductPage({ setCartItemsCount }) {
 
       <div className="reviews-section">
         <div className="reviews-header">
-          <h2>Отзывы {reviews.length > 0 && `(${reviews.length})`}</h2>
+          <h2>Отзывы {reviewsCount > 0 && `(${reviewsCount})`}</h2>
           <button 
             onClick={() => setShowReviewForm(!showReviewForm)}
             className="leave-review-btn"
@@ -531,7 +532,7 @@ function ProductPage({ setCartItemsCount }) {
 
         {showReviewForm && renderReviewForm()}
 
-        {reviews.length > 0 && (
+        {reviewsCount > 0 && (
           <div className="average-rating">
             Средняя оценка: {renderRatingStars(averageRating)}
           </div>
@@ -541,7 +542,7 @@ function ProductPage({ setCartItemsCount }) {
           <div>Загрузка отзывов...</div>
         ) : reviewError ? (
           <div className="error">{reviewError}</div>
-        ) : reviews.length === 0 ? (
+        ) : reviewsCount === 0 ? (
           <div>Пока нет отзывов</div>
         ) : (
           <div className="reviews-list">
